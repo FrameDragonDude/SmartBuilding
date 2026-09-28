@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SmartBuilding.API/SmartBuilding.API.csproj" />
+  <Project Path="SmartBuilding.Application/SmartBuilding.Application.csproj" />
+  <Project Path="SmartBuilding.Domain/SmartBuilding.Domain.csproj" />
+  <Project Path="SmartBuilding.Infrastructure/SmartBuilding.Infrastructure.csproj" />
+</Solution>
