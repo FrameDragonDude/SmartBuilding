@@ -36,6 +36,42 @@
             "related": ".pdb;.xml"
           }
         }
+      },
+      "SmartBuilding.Application/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "SmartBuilding.Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/SmartBuilding.Application.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/SmartBuilding.Application.dll": {}
+        }
+      },
+      "SmartBuilding.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/SmartBuilding.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/SmartBuilding.Domain.dll": {}
+        }
+      },
+      "SmartBuilding.Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "SmartBuilding.Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/SmartBuilding.Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/SmartBuilding.Infrastructure.dll": {}
+        }
       }
     }
   },
@@ -75,11 +111,28 @@
         "microsoft.openapi.2.0.0.nupkg.sha512",
         "microsoft.openapi.nuspec"
       ]
+    },
+    "SmartBuilding.Application/1.0.0": {
+      "type": "project",
+      "path": "../SmartBuilding.Application/SmartBuilding.Application.csproj",
+      "msbuildProject": "../SmartBuilding.Application/SmartBuilding.Application.csproj"
+    },
+    "SmartBuilding.Domain/1.0.0": {
+      "type": "project",
+      "path": "../SmartBuilding.Domain/SmartBuilding.Domain.csproj",
+      "msbuildProject": "../SmartBuilding.Domain/SmartBuilding.Domain.csproj"
+    },
+    "SmartBuilding.Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../SmartBuilding.Infrastructure/SmartBuilding.Infrastructure.csproj",
+      "msbuildProject": "../SmartBuilding.Infrastructure/SmartBuilding.Infrastructure.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
-      "Microsoft.AspNetCore.OpenApi >= 10.0.8"
+      "Microsoft.AspNetCore.OpenApi >= 10.0.8",
+      "SmartBuilding.Application >= 1.0.0",
+      "SmartBuilding.Infrastructure >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -107,7 +160,14 @@
         "net10.0": {
           "framework": "net10.0",
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.Application\\SmartBuilding.Application.csproj": {
+              "projectPath": "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.Application\\SmartBuilding.Application.csproj"
+            },
+            "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.Infrastructure\\SmartBuilding.Infrastructure.csproj": {
+              "projectPath": "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.Infrastructure\\SmartBuilding.Infrastructure.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
