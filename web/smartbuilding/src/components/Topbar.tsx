@@ -1,0 +1,3 @@
+import { Icon } from './Icon'
+type Props = { query: string; onQuery: (value: string) => void; onMenu: () => void }
+export function Topbar({ query, onQuery, onMenu }: Props) { return <header className="topbar"><button className="menu-button" onClick={onMenu}><Icon name="menu" /></button><label className="search"><Icon name="search" /><input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Tìm căn hộ, cư dân, xe, hóa đơn..." /></label><div className="top-actions"><span className="system-status"><i /> Node 01 · Bình thường</span><button className="notification"><Icon name="notifications" /><b /></button><span className="avatar">BQ</span></div></header> }

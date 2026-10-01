@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartBuilding.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2bb8efc32e07de551da9ca4922da9437d35c1044")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5ea9ce72ce460b26df22ed298c7a58b75ca7abb0")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartBuilding.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartBuilding.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

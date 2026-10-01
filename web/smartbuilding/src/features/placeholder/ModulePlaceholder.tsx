@@ -1,0 +1,3 @@
+import { Icon } from '../../components/Icon'
+import type { AppModule } from '../../data/navigation'
+export function ModulePlaceholder({ module, onBack }: { module: AppModule; onBack: () => void }) { return <section className="placeholder panel"><span className="placeholder-icon"><Icon name={module.icon} /></span><span className="eyebrow">UI ĐANG HOÀN THIỆN</span><h2>{module.label}</h2><p>Phân hệ đã được đặt trong cấu trúc dashboard. Bước tiếp theo là chuyển từng màn hình trong ZIP thành trang React và kết nối dữ liệu từ API.</p><button className="primary-button" onClick={onBack}><Icon name="arrow_back" /> Về bảng điều khiển</button></section> }
