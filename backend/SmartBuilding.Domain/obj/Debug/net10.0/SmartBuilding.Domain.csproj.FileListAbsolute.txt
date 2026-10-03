@@ -1,0 +1,12 @@
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\bin\Debug\net10.0\SmartBuilding.Domain.deps.json
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\bin\Debug\net10.0\SmartBuilding.Domain.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\bin\Debug\net10.0\SmartBuilding.Domain.pdb
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\obj\Debug\net10.0\SmartBuilding.Domain.GeneratedMSBuildEditorConfig.editorconfig
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\obj\Debug\net10.0\SmartBuilding.Domain.AssemblyInfoInputs.cache
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\obj\Debug\net10.0\SmartBuilding.Domain.AssemblyInfo.cs
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\obj\Debug\net10.0\SmartBuilding.Domain.csproj.CoreCompileInputs.cache
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\obj\Debug\net10.0\SmartBuilding.Domain.sourcelink.json
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\obj\Debug\net10.0\SmartBuilding.Domain.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\obj\Debug\net10.0\refint\SmartBuilding.Domain.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\obj\Debug\net10.0\SmartBuilding.Domain.pdb
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Domain\obj\Debug\net10.0\ref\SmartBuilding.Domain.dll

@@ -1,0 +1,16 @@
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\bin\Debug\net10.0\SmartBuilding.Application.deps.json
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\bin\Debug\net10.0\SmartBuilding.Application.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\bin\Debug\net10.0\SmartBuilding.Application.pdb
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\bin\Debug\net10.0\SmartBuilding.Domain.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\bin\Debug\net10.0\SmartBuilding.Domain.pdb
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.csproj.AssemblyReference.cache
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.GeneratedMSBuildEditorConfig.editorconfig
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.AssemblyInfoInputs.cache
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.AssemblyInfo.cs
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.csproj.CoreCompileInputs.cache
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.sourcelink.json
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBui.39E004B3.Up2Date
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\refint\SmartBuilding.Application.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.pdb
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\ref\SmartBuilding.Application.dll

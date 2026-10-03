@@ -1,0 +1,16 @@
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\bin\Debug\net10.0\SmartBuilding.Infrastructure.deps.json
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\bin\Debug\net10.0\SmartBuilding.Infrastructure.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\bin\Debug\net10.0\SmartBuilding.Infrastructure.pdb
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\bin\Debug\net10.0\SmartBuilding.Domain.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\bin\Debug\net10.0\SmartBuilding.Domain.pdb
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.csproj.AssemblyReference.cache
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.AssemblyInfoInputs.cache
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.AssemblyInfo.cs
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.csproj.CoreCompileInputs.cache
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.sourcelink.json
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBui.5F47D40A.Up2Date
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\refint\SmartBuilding.Infrastructure.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.pdb
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\ref\SmartBuilding.Infrastructure.dll
