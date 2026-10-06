@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Ml7BRFJyY8o=",
+  "dgSpecHash": "2u/cq7JQT1c=",
   "success": true,
-  "projectFilePath": "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.API\\SmartBuilding.API.csproj",
+  "projectFilePath": "D:\\flutter\\smart building\\backend\\SmartBuilding.API\\SmartBuilding.API.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ACER\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.8\\microsoft.aspnetcore.openapi.10.0.8.nupkg.sha512",
     "C:\\Users\\ACER\\.nuget\\packages\\microsoft.openapi\\2.0.0\\microsoft.openapi.2.0.0.nupkg.sha512",
@@ -13,9 +13,9 @@
       "code": "NU1903",
       "level": "Warning",
       "message": "Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
-      "projectPath": "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.API\\SmartBuilding.API.csproj",
+      "projectPath": "D:\\flutter\\smart building\\backend\\SmartBuilding.API\\SmartBuilding.API.csproj",
       "warningLevel": 1,
-      "filePath": "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.API\\SmartBuilding.API.csproj",
+      "filePath": "D:\\flutter\\smart building\\backend\\SmartBuilding.API\\SmartBuilding.API.csproj",
       "libraryId": "Microsoft.OpenApi",
       "targetGraphs": [
         "net10.0"

@@ -14,3 +14,19 @@ Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\S
 Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\refint\SmartBuilding.Infrastructure.dll
 Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.pdb
 Z:\AndroidStudio\DotNet\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\ref\SmartBuilding.Infrastructure.dll
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\bin\Debug\net10.0\SmartBuilding.Infrastructure.deps.json
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\bin\Debug\net10.0\SmartBuilding.Infrastructure.dll
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\bin\Debug\net10.0\SmartBuilding.Infrastructure.pdb
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\bin\Debug\net10.0\SmartBuilding.Domain.dll
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\bin\Debug\net10.0\SmartBuilding.Domain.pdb
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.csproj.AssemblyReference.cache
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.AssemblyInfoInputs.cache
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.AssemblyInfo.cs
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.csproj.CoreCompileInputs.cache
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.sourcelink.json
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBui.5F47D40A.Up2Date
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.dll
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\refint\SmartBuilding.Infrastructure.dll
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\SmartBuilding.Infrastructure.pdb
+D:\flutter\smart building\backend\SmartBuilding.Infrastructure\obj\Debug\net10.0\ref\SmartBuilding.Infrastructure.dll

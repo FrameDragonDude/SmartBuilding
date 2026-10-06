@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartBuilding.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1aed1184d4ca2838cd8b19f642a20295bd232083")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f3b5b70d914e1655a36f140fbc2dc41fd1725376")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartBuilding.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartBuilding.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

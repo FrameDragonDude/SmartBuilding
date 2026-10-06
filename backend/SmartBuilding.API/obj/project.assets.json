@@ -184,11 +184,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.API\\SmartBuilding.API.csproj",
+      "projectUniqueName": "D:\\flutter\\smart building\\backend\\SmartBuilding.API\\SmartBuilding.API.csproj",
       "projectName": "SmartBuilding.API",
-      "projectPath": "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.API\\SmartBuilding.API.csproj",
+      "projectPath": "D:\\flutter\\smart building\\backend\\SmartBuilding.API\\SmartBuilding.API.csproj",
       "packagesPath": "C:\\Users\\ACER\\.nuget\\packages\\",
-      "outputPath": "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.API\\obj\\",
+      "outputPath": "D:\\flutter\\smart building\\backend\\SmartBuilding.API\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\ACER\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -204,11 +204,11 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.Application\\SmartBuilding.Application.csproj": {
-              "projectPath": "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.Application\\SmartBuilding.Application.csproj"
+            "D:\\flutter\\smart building\\backend\\SmartBuilding.Application\\SmartBuilding.Application.csproj": {
+              "projectPath": "D:\\flutter\\smart building\\backend\\SmartBuilding.Application\\SmartBuilding.Application.csproj"
             },
-            "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.Infrastructure\\SmartBuilding.Infrastructure.csproj": {
-              "projectPath": "Z:\\AndroidStudio\\DotNet\\backend\\SmartBuilding.Infrastructure\\SmartBuilding.Infrastructure.csproj"
+            "D:\\flutter\\smart building\\backend\\SmartBuilding.Infrastructure\\SmartBuilding.Infrastructure.csproj": {
+              "projectPath": "D:\\flutter\\smart building\\backend\\SmartBuilding.Infrastructure\\SmartBuilding.Infrastructure.csproj"
             }
           }
         }
@@ -223,7 +223,7 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.300"
+      "SdkAnalysisLevel": "10.0.400"
     },
     "frameworks": {
       "net10.0": {
@@ -258,7 +258,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

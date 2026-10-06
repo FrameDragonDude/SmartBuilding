@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-
 import '../../configs/theme/app_color.dart';
 
 class BottomBar extends StatelessWidget {
   final int selectedIdx;
-  final ValueChanged onTap;
+  final ValueChanged<int> onTap;
 
   const BottomBar({
     super.key,
@@ -15,13 +14,14 @@ class BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide.none),
-        color: AppColors.textPrimary,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
       ),
       child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.textPrimary,
+        backgroundColor: Colors.white,
+        elevation: 0,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.grid_view_rounded),
@@ -46,8 +46,9 @@ class BottomBar extends StatelessWidget {
         ],
         currentIndex: selectedIdx,
         selectedItemColor: AppColors.secondary,
-        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
-        unselectedItemColor: Colors.black,
+        unselectedItemColor: const Color(0xFF64748B),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
         onTap: onTap,
       ),
     );

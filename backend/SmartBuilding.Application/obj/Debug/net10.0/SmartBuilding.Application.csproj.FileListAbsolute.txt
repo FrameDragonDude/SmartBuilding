@@ -14,3 +14,19 @@ Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\Smar
 Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\refint\SmartBuilding.Application.dll
 Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.pdb
 Z:\AndroidStudio\DotNet\backend\SmartBuilding.Application\obj\Debug\net10.0\ref\SmartBuilding.Application.dll
+D:\flutter\smart building\backend\SmartBuilding.Application\bin\Debug\net10.0\SmartBuilding.Application.deps.json
+D:\flutter\smart building\backend\SmartBuilding.Application\bin\Debug\net10.0\SmartBuilding.Application.dll
+D:\flutter\smart building\backend\SmartBuilding.Application\bin\Debug\net10.0\SmartBuilding.Application.pdb
+D:\flutter\smart building\backend\SmartBuilding.Application\bin\Debug\net10.0\SmartBuilding.Domain.dll
+D:\flutter\smart building\backend\SmartBuilding.Application\bin\Debug\net10.0\SmartBuilding.Domain.pdb
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.csproj.AssemblyReference.cache
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.AssemblyInfoInputs.cache
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.AssemblyInfo.cs
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.csproj.CoreCompileInputs.cache
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.sourcelink.json
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBui.39E004B3.Up2Date
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.dll
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\refint\SmartBuilding.Application.dll
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\SmartBuilding.Application.pdb
+D:\flutter\smart building\backend\SmartBuilding.Application\obj\Debug\net10.0\ref\SmartBuilding.Application.dll
