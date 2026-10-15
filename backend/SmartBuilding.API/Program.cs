@@ -9,11 +9,10 @@ var connectionString = builder.Configuration.GetConnectionString("SmartBuilding"
 
 builder.Services.AddOpenApi();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
-    .WithOrigins("http://127.0.0.1:5173", "http://localhost:5173", "http://localhost:5174")
+    .AllowAnyOrigin()
     .AllowAnyHeader()
     .AllowAnyMethod()));
 builder.Services.AddInfrastructure(connectionString);
-
 var app = builder.Build();
 app.UseCors();
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
