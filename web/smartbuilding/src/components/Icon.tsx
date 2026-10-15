@@ -1,2 +1,6 @@
-type Props = { name: string; className?: string }
-export function Icon({ name, className = '' }: Props) { return <span className={`material-symbols-outlined ${className}`}>{name}</span> }
+import type React from 'react'
+
+type Props = { name: string; className?: string; style?: React.CSSProperties }
+export function Icon({ name, className = '', style }: Props) {
+  return <span className={`material-symbols-outlined ${className}`} style={style}>{name}</span>
+}

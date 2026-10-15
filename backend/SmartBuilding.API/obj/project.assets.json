@@ -77,6 +77,8 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
+          "MySqlConnector": "2.4.0",
+          "SmartBuilding.Application": "1.0.0",
           "SmartBuilding.Domain": "1.0.0"
         },
         "compile": {
@@ -214,6 +216,9 @@
         }
       },
       "warningProperties": {
+        "noWarn": [
+          "NU1903"
+        ],
         "warnAsError": [
           "NU1605"
         ]
@@ -675,17 +680,5 @@
         }
       }
     }
-  },
-  "logs": [
-    {
-      "code": "NU1903",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
-      "libraryId": "Microsoft.OpenApi",
-      "targetGraphs": [
-        "net10.0"
-      ]
-    }
-  ]
+  }
 }

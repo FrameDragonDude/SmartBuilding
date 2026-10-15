@@ -39,3 +39,4 @@ Z:\AndroidStudio\DotNet\backend\SmartBuilding.API\obj\Debug\net10.0\refint\Smart
 Z:\AndroidStudio\DotNet\backend\SmartBuilding.API\obj\Debug\net10.0\SmartBuilding.API.pdb
 Z:\AndroidStudio\DotNet\backend\SmartBuilding.API\obj\Debug\net10.0\SmartBuilding.API.genruntimeconfig.cache
 Z:\AndroidStudio\DotNet\backend\SmartBuilding.API\obj\Debug\net10.0\ref\SmartBuilding.API.dll
+Z:\AndroidStudio\DotNet\backend\SmartBuilding.API\bin\Debug\net10.0\Database\smartbuildingdb.sql

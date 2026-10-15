@@ -1,0 +1,144 @@
+/* Styles for Parking & RFID Module */
+
+.parking-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  padding: 12px 8px;
+  border-radius: 6px;
+}
+
+.parking-row:hover {
+  background-color: #f0f5ff;
+}
+
+.parking-row.active {
+  background-color: #e5efff;
+  border-left: 3px solid #2563eb;
+  padding-left: 5px;
+}
+
+/* Parking Metrics Grid */
+.parking-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Toolbar & Filters */
+.parking-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.parking-filter-bar {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.parking-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.parking-filter-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.parking-filter-group select {
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #1e293b;
+  outline: none;
+}
+
+/* Detail Card enhancements */
+.rfid-panel-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.rfid-panel-actions button {
+  flex: 1;
+  font-size: 11px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.btn-danger {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+}
+
+.btn-danger:hover {
+  background: #fecaca;
+}
+
+.btn-success {
+  background: #059669;
+  border: none;
+  color: #fff;
+}
+
+.btn-success:hover {
+  background: #047857;
+}
+
+.empty-slot-banner {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 24px 16px;
+  text-align: center;
+  color: #64748b;
+  margin: 14px 0;
+}
+
+.empty-slot-banner span {
+  font-size: 36px;
+  color: #94a3b8;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.empty-slot-banner strong {
+  display: block;
+  font-size: 14px;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 1080px) {
+  .parking-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .parking-metrics {
+    grid-template-columns: 1fr;
+  }
+}
