@@ -34,8 +34,10 @@ google-services.json
 *.hprof
 
 # .NET & C# Build Outputs (rất quan trọng để tránh conflict merge)
-bin/
-obj/
+[Bb]in/
+[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/
 *.user
 *.suo
 *.userosscache
