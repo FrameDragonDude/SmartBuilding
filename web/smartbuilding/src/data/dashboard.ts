@@ -6,13 +6,13 @@ export const metrics = [
 ]
 
 export const residentRequests = [
-  { unit: 'RB-1402', name: 'Đặng Thảo Vy', detail: 'Đăng ký tạm trú mới', time: '15 phút trước', status: 'Chờ duyệt', tone: 'amber' },
-  { unit: 'RB-0805', name: 'Trần Quốc Bảo', detail: 'Khai báo tạm vắng', time: '1 giờ trước', status: 'Đã tiếp nhận', tone: 'blue' },
-  { unit: 'RB-1901', name: 'Lê Minh Châu', detail: 'Cấp thẻ cư dân mới', time: '3 giờ trước', status: 'Hoàn tất', tone: 'green' },
+  { unit: 'RB-0101', name: 'Nguyễn Văn An', detail: 'Hành lang tầng 1 có rác chưa thu gom', time: '15 phút trước', status: 'Chờ duyệt', tone: 'amber' },
+  { unit: 'RB-0102', name: 'Trần Thị Bình', detail: 'Tiếng ồn từ căn hộ tầng trên ban đêm', time: '1 giờ trước', status: 'Đang xử lý', tone: 'blue' },
+  { unit: 'RB-0201', name: 'Lê Hoàng Cường', detail: 'Đèn chiếu sáng sảnh tầng 2 bị nhấp nháy', time: '3 giờ trước', status: 'Đã hoàn tất', tone: 'green' },
 ]
 
 export const workOrders = [
-  { code: 'MEP-0268', title: 'Đèn hành lang tầng 12 chập chờn', location: 'Tòa Ruby · Tầng 12', status: 'Đang xử lý' },
-  { code: 'MEP-0267', title: 'Bảo trì bơm nước khu B2', location: 'Tòa Aqua · Hầm B2', status: 'Đã phân công' },
-  { code: 'MEP-0266', title: 'Kiểm định định kỳ hệ thống PCCC', location: 'Tất cả tòa', status: 'Theo kế hoạch' },
+  { code: 'CR3', title: 'Đèn chiếu sáng sảnh tầng 2 bị nhấp nháy', location: 'Tòa Ruby Suites · Tầng 2', status: 'Đang xử lý' },
+  { code: 'CR6', title: 'Cửa chống cháy thoát hiểm tầng 3 bị kẹt', location: 'Tòa Ruby Suites · Tầng 3', status: 'Đã phân công' },
+  { code: 'CR4', title: 'Kiểm tra camera an ninh tầng hầm B1', location: 'Tòa Ruby Suites · Hầm B1', status: 'Theo kế hoạch' },
 ]

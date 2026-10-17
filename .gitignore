@@ -32,3 +32,23 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# .NET & C# Build Outputs (rất quan trọng để tránh conflict merge)
+[Bb]in/
+[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+# Node.js / Web
+node_modules/
+dist/
+.vite/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins-dependencies

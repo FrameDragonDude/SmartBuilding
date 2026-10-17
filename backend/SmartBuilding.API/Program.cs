@@ -1,42 +1,280 @@
-using MySqlConnector;
+using SmartBuilding.Application.Abstractions.Persistence;
+using SmartBuilding.Application.Models;
+using SmartBuilding.Infrastructure;
+using SmartBuilding.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
-var connectionString = builder.Configuration.GetConnectionString("SmartBuilding") ?? throw new InvalidOperationException("Missing SmartBuilding connection string.");
+var connectionString = builder.Configuration.GetConnectionString("SmartBuilding")
+    ?? throw new InvalidOperationException("Missing SmartBuilding connection string.");
+
 builder.Services.AddOpenApi();
-builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
-builder.Services.AddScoped(_ => new MySqlConnection(connectionString));
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
+    .AllowAnyOrigin()
+    .AllowAnyHeader()
+    .AllowAnyMethod()));
+builder.Services.AddInfrastructure(connectionString);
 var app = builder.Build();
 app.UseCors();
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
 
-app.MapGet("/api/residents", async (string? search, MySqlConnection connection, CancellationToken token) =>
+// Ensure sample apartments, floors and data exist for all 8 buildings
+await DatabaseSeeder.EnsureAllBuildingsSeededAsync(connectionString);
+
+
+// 0. TÒA NHÀ (BUILDINGS)
+
+app.MapGet("/api/buildings", async (IResidentRepository repository, CancellationToken token) =>
+    Results.Ok(await repository.GetBuildingsAsync(token)));
+
+
+// 1. CƯ DÂN & CĂN HỘ (RESIDENTS & APARTMENTS)
+
+app.MapGet("/api/residents", async (
+    string? search,
+    string? status,
+    string? contractType,
+    string? buildingId,
+    IResidentRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetListAsync(search, status, contractType, buildingId, token)));
+
+app.MapGet("/api/residents/summary", async (
+    string? buildingId,
+    IResidentRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetMetricsAsync(buildingId, token)));
+
+app.MapGet("/api/residents/{apartmentId}/detail", async (
+    string apartmentId,
+    IResidentRepository repository,
+    CancellationToken token) =>
 {
-    const string sql = """
-        SELECT a.Id ApartmentId, a.ApartmentNumber, a.Status ApartmentStatus, r.Id ResidentId, r.FullName, r.PhoneNumber, r.Email, ah.ContractType, ah.StartDate
-        FROM Apartments a LEFT JOIN ApartmentHistories ah ON ah.ApartmentId = a.Id AND ah.IsCurrent = 1
-        LEFT JOIN Residents r ON r.Id = ah.ResidentId
-        WHERE (@search IS NULL OR @search = '' OR a.ApartmentNumber LIKE CONCAT('%', @search, '%') OR r.FullName LIKE CONCAT('%', @search, '%') OR r.PhoneNumber LIKE CONCAT('%', @search, '%'))
-        ORDER BY a.ApartmentNumber LIMIT 100;
-        """;
-    await connection.OpenAsync(token); await using var command = new MySqlCommand(sql, connection); command.Parameters.AddWithValue("@search", search);
-    await using var reader = await command.ExecuteReaderAsync(token); var results = new List<object>();
-    while (await reader.ReadAsync(token)) results.Add(new { apartmentId = reader.GetString("ApartmentId"), apartmentNumber = reader.GetString("ApartmentNumber"), apartmentStatus = reader.GetString("ApartmentStatus"), residentId = reader.IsDBNull(reader.GetOrdinal("ResidentId")) ? null : reader.GetString("ResidentId"), fullName = reader.IsDBNull(reader.GetOrdinal("FullName")) ? null : reader.GetString("FullName"), phoneNumber = reader.IsDBNull(reader.GetOrdinal("PhoneNumber")) ? null : reader.GetString("PhoneNumber"), email = reader.IsDBNull(reader.GetOrdinal("Email")) ? null : reader.GetString("Email"), contractType = reader.IsDBNull(reader.GetOrdinal("ContractType")) ? null : reader.GetString("ContractType") });
-    return Results.Ok(results);
+    var detail = await repository.GetDetailAsync(apartmentId, token);
+    return detail is null ? Results.NotFound(new { message = $"Không tìm thấy thông tin căn hộ {apartmentId}" }) : Results.Ok(detail);
 });
 
-app.MapGet("/api/parking", async (string? search, MySqlConnection connection, CancellationToken token) =>
+app.MapGet("/api/apartments", async (
+    string? buildingId,
+    IResidentRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetApartmentsAsync(buildingId, token)));
+
+app.MapPost("/api/residents", async (
+    CreateResidentRequest request,
+    IResidentRepository repository,
+    CancellationToken token) =>
 {
-    const string sql = """
-        SELECT ps.Id SlotId, ps.SlotCode, ps.BasementLevel, ps.SlotType, ps.IsOccupied, v.Id VehicleId, v.VehicleType, v.LicensePlate, v.RfidCardCode, v.Brand, r.FullName, r.PhoneNumber, a.ApartmentNumber
-        FROM ParkingSlots ps LEFT JOIN Vehicles v ON v.Id = ps.VehicleId LEFT JOIN Residents r ON r.Id = v.ResidentId LEFT JOIN Apartments a ON a.Id = v.ApartmentId
-        WHERE (@search IS NULL OR @search = '' OR ps.SlotCode LIKE CONCAT('%', @search, '%') OR v.LicensePlate LIKE CONCAT('%', @search, '%') OR v.RfidCardCode LIKE CONCAT('%', @search, '%') OR r.FullName LIKE CONCAT('%', @search, '%'))
-        ORDER BY ps.BasementLevel, ps.SlotCode LIMIT 100;
-        """;
-    await connection.OpenAsync(token); await using var command = new MySqlCommand(sql, connection); command.Parameters.AddWithValue("@search", search);
-    await using var reader = await command.ExecuteReaderAsync(token); var results = new List<object>();
-    while (await reader.ReadAsync(token)) results.Add(new { slotId = reader.GetString("SlotId"), slotCode = reader.GetString("SlotCode"), basementLevel = reader.GetString("BasementLevel"), slotType = reader.GetString("SlotType"), isOccupied = reader.GetBoolean("IsOccupied"), vehicleId = reader.IsDBNull(reader.GetOrdinal("VehicleId")) ? null : reader.GetString("VehicleId"), vehicleType = reader.IsDBNull(reader.GetOrdinal("VehicleType")) ? null : reader.GetString("VehicleType"), licensePlate = reader.IsDBNull(reader.GetOrdinal("LicensePlate")) ? null : reader.GetString("LicensePlate"), rfidCardCode = reader.IsDBNull(reader.GetOrdinal("RfidCardCode")) ? null : reader.GetString("RfidCardCode"), brand = reader.IsDBNull(reader.GetOrdinal("Brand")) ? null : reader.GetString("Brand"), fullName = reader.IsDBNull(reader.GetOrdinal("FullName")) ? null : reader.GetString("FullName"), phoneNumber = reader.IsDBNull(reader.GetOrdinal("PhoneNumber")) ? null : reader.GetString("PhoneNumber"), apartmentNumber = reader.IsDBNull(reader.GetOrdinal("ApartmentNumber")) ? null : reader.GetString("ApartmentNumber") });
-    return Results.Ok(results);
+    if (string.IsNullOrWhiteSpace(request.FullName))
+        return Results.BadRequest(new { message = "Họ và tên không được để trống" });
+    if (string.IsNullOrWhiteSpace(request.IdentityCardNumber))
+        return Results.BadRequest(new { message = "Số CCCD/CMND không được để trống" });
+    if (string.IsNullOrWhiteSpace(request.PhoneNumber))
+        return Results.BadRequest(new { message = "Số điện thoại không được để trống" });
+    if (string.IsNullOrWhiteSpace(request.ApartmentId))
+        return Results.BadRequest(new { message = "Vui lòng chọn căn hộ" });
+
+    try
+    {
+        var id = await repository.CreateResidentAsync(request, token);
+        return Results.Created($"/api/residents/{request.ApartmentId}/detail", new { id, message = "Thêm mới cư dân thành công!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: 500, title: "Lỗi thêm cư dân");
+    }
 });
+
+
+// 2. BÃI XE & RFID (PARKING & VEHICLES)
+
+app.MapGet("/api/parking", async (
+    string? search,
+    string? basement,
+    string? slotType,
+    bool? isOccupied,
+    string? buildingId,
+    IParkingRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetListAsync(search, basement, slotType, isOccupied, buildingId, token)));
+
+app.MapGet("/api/parking/summary", async (
+    string? buildingId,
+    IParkingRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetMetricsAsync(buildingId, token)));
+
+app.MapGet("/api/parking/{slotId}/detail", async (
+    string slotId,
+    IParkingRepository repository,
+    CancellationToken token) =>
+{
+    var detail = await repository.GetDetailAsync(slotId, token);
+    return detail is null ? Results.NotFound(new { message = $"Không tìm thấy vị trí đỗ {slotId}" }) : Results.Ok(detail);
+});
+
+app.MapPost("/api/parking/register", async (
+    CreateVehicleRequest request,
+    IParkingRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.ResidentId))
+        return Results.BadRequest(new { message = "Vui lòng chọn cư dân" });
+    if (string.IsNullOrWhiteSpace(request.ApartmentId))
+        return Results.BadRequest(new { message = "Vui lòng chọn căn hộ" });
+    if (string.IsNullOrWhiteSpace(request.LicensePlate))
+        return Results.BadRequest(new { message = "Biển số xe không được để trống" });
+    if (string.IsNullOrWhiteSpace(request.RfidCardCode))
+        return Results.BadRequest(new { message = "Mã thẻ RFID không được để trống" });
+
+    try
+    {
+        var vehicleId = await repository.RegisterVehicleAsync(request, token);
+        return Results.Created($"/api/parking/register/{vehicleId}", new { vehicleId, message = "Đăng ký xe & cấp thẻ RFID thành công!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: 500, title: "Lỗi đăng ký xe");
+    }
+});
+
+app.MapPost("/api/parking/{slotId}/release", async (
+    string slotId,
+    IParkingRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.ReleaseSlotAsync(slotId, token);
+    return success
+        ? Results.Ok(new { success = true, message = "Đã thu hồi thẻ và trả vị trí ô đỗ thành công!" })
+        : Results.NotFound(new { success = false, message = "Không tìm thấy vị trí ô đỗ" });
+});
+
+
+// 3. HÓA ĐƠN & THU PHÍ (INVOICES & BILLING & RECONCILIATION)
+
+app.MapGet("/api/invoices", async (
+    string? search,
+    string? filterTab,
+    int? month,
+    int? year,
+    string? buildingId,
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetInvoicesAsync(search, filterTab, month, year, buildingId, token)));
+
+app.MapGet("/api/invoices/summary", async (
+    int? month,
+    int? year,
+    string? buildingId,
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetSummaryMetricsAsync(month, year, buildingId, token)));
+
+app.MapGet("/api/invoices/pending-payments", async (
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetPendingPaymentsAsync(token)));
+
+app.MapGet("/api/invoices/penalties", async (
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetPenaltiesAsync(token)));
+
+app.MapGet("/api/invoices/revenue-structure", async (
+    int? month,
+    int? year,
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetRevenueStructureAsync(month, year, token)));
+
+app.MapPost("/api/invoices/payments/{paymentId}/approve", async (
+    string paymentId,
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.ApprovePaymentAsync(paymentId, token);
+    return success
+        ? Results.Ok(new { message = "Xác nhận đối soát thành công! Đã ghi nhận thanh toán vào hóa đơn." })
+        : Results.NotFound(new { message = "Không tìm thấy giao dịch này." });
+});
+
+app.MapPost("/api/invoices/payments/{paymentId}/reject", async (
+    string paymentId,
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.RejectPaymentAsync(paymentId, token);
+    return success
+        ? Results.Ok(new { message = "Đã từ chối chứng từ thanh toán." })
+        : Results.NotFound(new { message = "Không tìm thấy giao dịch này." });
+});
+
+app.MapPost("/api/invoices/penalties/{penaltyId}/waive", async (
+    string penaltyId,
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.WaivePenaltyAsync(penaltyId, token);
+    return success
+        ? Results.Ok(new { message = "Đã duyệt miễn giảm lãi phạt quá hạn thành công!" })
+        : Results.NotFound(new { message = "Không tìm thấy bản ghi phạt." });
+});
+
+app.MapPost("/api/invoices/reminders/send-batch", async (
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+{
+    var count = await repository.SendBatchRemindersAsync(token);
+    return Results.Ok(new { count, message = $"Đã gửi thông báo nhắc nợ đồng loạt đến {count} căn hộ qua SMS & App!" });
+});
+
+app.MapPost("/api/invoices/generate-monthly", async (
+    GenerateMonthlyInvoiceRequest request,
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+{
+    var count = await repository.GenerateMonthlyInvoicesAsync(request.Month, request.Year, token);
+    return Results.Ok(new { count, message = $"Đã tính và phát hành thành công {count} hóa đơn cho kỳ T{request.Month:00}/{request.Year}!" });
+});
+
+
+// 4. CẤU HÌNH BIỂU PHÍ (SERVICE TARIFFS CONFIGURATION)
+
+app.MapGet("/api/tariffs", async (
+    ITariffRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetTariffConfigAsync(token)));
+
+app.MapPut("/api/tariffs/price", async (
+    UpdateTariffPriceRequest request,
+    ITariffRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.UpdateTariffPriceAsync(request, token);
+    return success
+        ? Results.Ok(new { message = "Đã cập nhật đơn giá dịch vụ thành công!" })
+        : Results.NotFound(new { message = "Không tìm thấy biểu phí cần sửa." });
+});
+
+app.MapPut("/api/tariffs/rules", async (
+    UpdateRulesRequest request,
+    ITariffRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.UpdateRulesAsync(request, token);
+    return Results.Ok(new { success, message = "Đã lưu quy tắc ân hạn và chế tài vận hành thành công!" });
+});
+
+app.MapPost("/api/tariffs/approve-draft", async (
+    ITariffRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.ApproveDraftTariffAsync(token);
+    return Results.Ok(new { success, message = "Đã phê duyệt & ký số điện tử ban hành biểu phí mới!" });
+});
+
+
+// SYSTEM
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
+
 app.Run();
