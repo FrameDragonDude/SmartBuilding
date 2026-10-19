@@ -273,6 +273,55 @@ app.MapPost("/api/tariffs/approve-draft", async (
 });
 
 
+// 5. MÀN HÌNH TRANG CHỦ (HOME SCREEN)
+
+app.MapGet("/api/home", async (
+    string? residentId,
+    IHomeRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetHomeDataAsync(residentId, token)));
+
+
+// 6. XÁC THỰC & TÀI KHOẢN (AUTH & ACCOUNTS)
+
+app.MapPost("/api/auth/login", async (
+    LoginRequest request,
+    IAuthRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.UsernameOrEmail) || string.IsNullOrWhiteSpace(request.Password))
+    {
+        return Results.BadRequest(new { message = "Vui lòng nhập tên đăng nhập/email và mật khẩu!" });
+    }
+
+    var result = await repository.LoginAsync(request, token);
+    return result is not null
+        ? Results.Ok(result)
+        : Results.BadRequest(new { message = "Tên đăng nhập hoặc mật khẩu không chính xác!" });
+});
+
+app.MapPost("/api/auth/register", async (
+    RegisterRequest request,
+    IAuthRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.FullName))
+    {
+        return Results.BadRequest(new { message = "Vui lòng điền đầy đủ thông tin bắt buộc!" });
+    }
+
+    try
+    {
+        var result = await repository.RegisterAsync(request, token);
+        return Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: 400, title: "Lỗi đăng ký");
+    }
+});
+
+
 // SYSTEM
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));

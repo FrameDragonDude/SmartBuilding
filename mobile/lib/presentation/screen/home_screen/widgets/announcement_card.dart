@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
+import '../../../../data/model/home_data_model.dart';
 
 class AnnouncementCard extends StatelessWidget {
-  const AnnouncementCard({super.key});
+  final AnnouncementHomeModel? announcement;
+
+  const AnnouncementCard({super.key, this.announcement});
 
   @override
   Widget build(BuildContext context) {
+    final title = announcement?.title ?? "Bảo trì thang máy Tháp Ruby";
+    final date = announcement?.date ?? "Hôm nay";
+    final content = announcement?.content ?? "Thang máy P1 & P2 tạm ngưng để kiểm định an toàn định kỳ từ 14:00 đến 17:00 ngày 10/09/2026. Quý cư dân vui lòng sử dụng thang hàng P3.";
+    final hotline = announcement?.hotline ?? "1900 8899";
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -45,27 +53,37 @@ class AnnouncementCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.warningRedBackground,
-                            borderRadius: BorderRadius.circular(10),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.warningRedBackground,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.build, color: AppColors.warningRed, size: 20),
                           ),
-                          child: const Icon(Icons.build, color: AppColors.warningRed, size: 20),
-                        ),
-                        const SizedBox(width: 10),
-                        const Text("Bảo trì thang máy Tháp Ruby", style: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
-                      ],
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const Text("Hôm nay", style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                    const SizedBox(width: 8),
+                    Text(date, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
                   ],
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  "Thang máy P1 & P2 tạm ngưng để kiểm định an toàn định kỳ từ 14:00 đến 17:00 ngày 10/09/2026. Quý cư dân vui lòng sử dụng thang hàng P3.",
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
+                Text(
+                  content,
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 10),
@@ -74,11 +92,11 @@ class AnnouncementCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.support_agent, color: AppColors.secondary, size: 16),
-                        SizedBox(width: 4),
-                        Text("Hotline hỗ trợ: 1900 8899", style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                        const Icon(Icons.support_agent, color: AppColors.secondary, size: 16),
+                        const SizedBox(width: 4),
+                        Text("Hotline hỗ trợ: $hotline", style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                       ],
                     ),
                     TextButton(
