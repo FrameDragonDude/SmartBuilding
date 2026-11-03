@@ -29,4 +29,20 @@ public interface IInvoiceRepository
     Task<int> SendBatchRemindersAsync(CancellationToken cancellationToken);
 
     Task<int> GenerateMonthlyInvoicesAsync(int month, int year, CancellationToken cancellationToken);
+
+    // RESIDENT MOBILE INVOICE APIS
+    Task<ResidentInvoiceSummaryDto> GetResidentInvoicesAsync(
+        string? residentId,
+        string? status,
+        int? year,
+        CancellationToken cancellationToken);
+
+    Task<ResidentInvoiceDetailDto?> GetResidentInvoiceDetailAsync(
+        string invoiceId,
+        CancellationToken cancellationToken);
+
+    Task<bool> SubmitPaymentAsync(
+        string invoiceId,
+        SubmitInvoicePaymentRequest request,
+        CancellationToken cancellationToken);
 }

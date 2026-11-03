@@ -16,6 +16,8 @@ public static class DependencyInjection
         services.AddScoped<ITariffRepository, TariffRepository>();
         services.AddScoped<IHomeRepository, HomeRepository>();
         services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<IComplaintRepository, ComplaintRepository>();
+        services.AddScoped<IAmenityRepository, AmenityRepository>();
         return services;
     }
 }

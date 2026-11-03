@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
 
 class ComplaintFilterChips extends StatefulWidget {
-  final Function(int index)? onSelected;
+  final String selectedFilter;
+  final Function(String filter)? onFilterSelected;
 
   const ComplaintFilterChips({
     super.key,
-    this.onSelected,
+    this.selectedFilter = 'Tất cả',
+    this.onFilterSelected,
   });
 
   @override
@@ -14,14 +16,11 @@ class ComplaintFilterChips extends StatefulWidget {
 }
 
 class _ComplaintFilterChipsState extends State<ComplaintFilterChips> {
-  int _selectedIndex = 0;
-
   final List<Map<String, dynamic>> _filters = const [
-    {'label': 'Tất cả (10)', 'icon': null},
-    {'label': 'Vệ sinh', 'icon': Icons.cleaning_services_outlined},
-    {'label': 'Tiếng ồn', 'icon': Icons.volume_up_outlined},
-    {'label': 'Hạ tầng', 'icon': Icons.build_outlined},
-    {'label': 'An ninh', 'icon': Icons.shield_outlined},
+    {'label': 'Tất cả', 'icon': null},
+    {'label': 'Chờ tiếp nhận', 'icon': Icons.pending_actions_outlined},
+    {'label': 'Đang xử lý', 'icon': Icons.engineering_outlined},
+    {'label': 'Đã hoàn thành', 'icon': Icons.check_circle_outline},
   ];
 
   @override
@@ -30,19 +29,18 @@ class _ComplaintFilterChipsState extends State<ComplaintFilterChips> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: List.generate(_filters.length, (index) {
-          final isSelected = index == _selectedIndex;
           final filter = _filters[index];
+          final String label = filter['label'];
+          final isSelected = widget.selectedFilter == label ||
+              (widget.selectedFilter == 'Tất cả' && index == 0);
           final IconData? iconData = filter['icon'];
 
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: InkWell(
               onTap: () {
-                setState(() {
-                  _selectedIndex = index;
-                });
-                if (widget.onSelected != null) {
-                  widget.onSelected!(index);
+                if (widget.onFilterSelected != null) {
+                  widget.onFilterSelected!(label);
                 }
               },
               borderRadius: BorderRadius.circular(20),
@@ -72,7 +70,7 @@ class _ComplaintFilterChipsState extends State<ComplaintFilterChips> {
                       const SizedBox(width: 6),
                     ],
                     Text(
-                      filter['label'],
+                      label,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight:
