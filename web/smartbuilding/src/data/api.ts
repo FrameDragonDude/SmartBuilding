@@ -551,3 +551,260 @@ export async function approveDraftTariff(): Promise<{ message: string }> {
   return result.json()
 }
 
+// ==================== MEP & CHỈ SỐ ĐIỆN NƯỚC (LONG - TRANG 3) ====================
+
+export type UtilityMeterItem = {
+  id: string
+  apartmentId: string
+  apartmentNumber: string
+  buildingId: string
+  buildingName: string
+  floorNumber: number
+  meterType: 'Electricity' | 'Water'
+  meterSerialNumber: string
+  installationDate: string
+  isActive: boolean
+}
+
+export type UtilityUsageItem = {
+  id: string
+  meterId: string
+  apartmentId: string
+  apartmentNumber: string
+  buildingId: string
+  buildingName: string
+  floorNumber: number
+  meterType: 'Electricity' | 'Water'
+  meterSerialNumber: string
+  billingMonth: number
+  billingYear: number
+  previousReading: number
+  currentReading: number
+  consumption: number
+  calculatedAmount: number
+  proofImageUrl: string | null
+  recordedAt: string | null
+  isRecorded: boolean
+  hasAnomaly: boolean
+  anomalyReason: string | null
+}
+
+export type UtilitySummary = {
+  totalMeters: number
+  electricityMetersCount: number
+  waterMetersCount: number
+  recordedCount: number
+  pendingCount: number
+  totalElectricityKwh: number
+  totalWaterM3: number
+  anomalyAlertsCount: number
+}
+
+export async function getUtilitySummary(buildingId?: string, month?: number, year?: number): Promise<UtilitySummary> {
+  const params = new URLSearchParams()
+  if (buildingId) params.append('buildingId', buildingId)
+  if (month) params.append('month', month.toString())
+  if (year) params.append('year', year.toString())
+
+  const res = await fetch(`${apiUrl}/utility/summary?${params.toString()}`)
+  if (!res.ok) throw new Error('Không thể tải tổng quan MEP')
+  return res.json()
+}
+
+export async function getUtilityMeters(buildingId?: string, meterType?: string, search?: string): Promise<UtilityMeterItem[]> {
+  const params = new URLSearchParams()
+  if (buildingId) params.append('buildingId', buildingId)
+  if (meterType && meterType !== 'All') params.append('meterType', meterType)
+  if (search) params.append('search', search)
+
+  const res = await fetch(`${apiUrl}/utility-meters?${params.toString()}`)
+  if (!res.ok) throw new Error('Không thể tải danh sách công tơ')
+  return res.json()
+}
+
+export async function getUtilityUsages(
+  buildingId?: string,
+  floorNumber?: number,
+  meterType?: string,
+  month?: number,
+  year?: number,
+  search?: string
+): Promise<UtilityUsageItem[]> {
+  const params = new URLSearchParams()
+  if (buildingId) params.append('buildingId', buildingId)
+  if (floorNumber) params.append('floorNumber', floorNumber.toString())
+  if (meterType && meterType !== 'All') params.append('meterType', meterType)
+  if (month) params.append('month', month.toString())
+  if (year) params.append('year', year.toString())
+  if (search) params.append('search', search)
+
+  const res = await fetch(`${apiUrl}/utility-usages?${params.toString()}`)
+  if (!res.ok) throw new Error('Không thể tải chỉ số điện nước')
+  return res.json()
+}
+
+export async function recordUtilityReading(data: {
+  meterId: string
+  billingMonth: number
+  billingYear: number
+  currentReading: number
+  proofImageUrl?: string
+}): Promise<{ usageId: string; message: string }> {
+  const res = await fetch(`${apiUrl}/utility/record`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message || 'Lỗi ghi nhận chỉ số')
+  return json
+}
+
+export async function registerUtilityMeter(data: {
+  apartmentId: string
+  meterType: string
+  meterSerialNumber: string
+  installationDate?: string
+}): Promise<{ meterId: string; message: string }> {
+  const res = await fetch(`${apiUrl}/utility/meters`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message || 'Lỗi đăng ký công tơ')
+  return json
+}
+
+export async function lockUtilityCycle(buildingId: string, month: number, year: number): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${apiUrl}/utility/lock-cycle?buildingId=${buildingId}&month=${month}&year=${year}`, {
+    method: 'POST'
+  })
+  return res.json()
+}
+
+// ==================== PHẢN ÁNH SỰ CỐ & NGHIỆM THU (LONG - TRANG 9) ====================
+
+export type ComplaintItem = {
+  id: string
+  residentId: string
+  residentName: string
+  phoneNumber: string
+  apartmentId: string
+  apartmentNumber: string
+  buildingId: string
+  buildingName: string
+  category: 'Sanitation' | 'Noise' | 'Security' | 'FacilityDamage'
+  title: string
+  content: string
+  attachedImageUrl: string | null
+  resolvedImageUrl: string | null
+  status: 'Pending' | 'Assigned' | 'Processing' | 'Resolved' | 'Closed'
+  createdAt: string
+  resolvedAt: string | null
+}
+
+export type ComplaintSummary = {
+  totalComplaints: number
+  pendingCount: number
+  assignedCount: number
+  processingCount: number
+  resolvedCount: number
+  closedCount: number
+}
+
+export async function getComplaintsSummary(buildingId?: string): Promise<ComplaintSummary> {
+  const params = new URLSearchParams()
+  if (buildingId) params.append('buildingId', buildingId)
+
+  const res = await fetch(`${apiUrl}/complaints/summary?${params.toString()}`)
+  if (!res.ok) throw new Error('Không thể tải tổng quan sự cố')
+  return res.json()
+}
+
+export async function getComplaints(
+  buildingId?: string,
+  category?: string,
+  status?: string,
+  search?: string
+): Promise<ComplaintItem[]> {
+  const params = new URLSearchParams()
+  if (buildingId) params.append('buildingId', buildingId)
+  if (category && category !== 'All') params.append('category', category)
+  if (status && status !== 'All') params.append('status', status)
+  if (search) params.append('search', search)
+
+  const res = await fetch(`${apiUrl}/complaints?${params.toString()}`)
+  if (!res.ok) throw new Error('Không thể tải danh sách khiếu nại')
+  return res.json()
+}
+
+export async function getComplaintDetail(id: string): Promise<ComplaintItem> {
+  const res = await fetch(`${apiUrl}/complaints/${id}`)
+  if (!res.ok) throw new Error('Không tìm thấy sự cố')
+  return res.json()
+}
+
+export async function createComplaint(data: {
+  residentId: string
+  apartmentId: string
+  category: string
+  title: string
+  content: string
+  attachedImageUrl?: string
+}): Promise<{ id: string; message: string }> {
+  const res = await fetch(`${apiUrl}/complaints`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message || 'Lỗi tiếp nhận phản ánh')
+  return json
+}
+
+export async function assignComplaint(
+  id: string,
+  assignedToRoleOrName: string,
+  note?: string
+): Promise<{ message: string }> {
+  const res = await fetch(`${apiUrl}/complaints/${id}/assign`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ complaintId: id, assignedToRoleOrName, note })
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message || 'Lỗi phân công xử lý')
+  return json
+}
+
+export async function resolveComplaint(
+  id: string,
+  resolvedImageUrl: string,
+  resolutionNote?: string
+): Promise<{ message: string }> {
+  const res = await fetch(`${apiUrl}/complaints/${id}/resolve`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ complaintId: id, resolvedImageUrl, resolutionNote })
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message || 'Lỗi nghiệm thu sự cố')
+  return json
+}
+
+export async function updateComplaintStatus(
+  id: string,
+  status: string
+): Promise<{ message: string }> {
+  const res = await fetch(`${apiUrl}/complaints/${id}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ complaintId: id, status })
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message || 'Lỗi cập nhật trạng thái')
+  return json
+}
+
+

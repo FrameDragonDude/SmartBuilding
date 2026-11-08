@@ -8,6 +8,8 @@ import { ResidentsPage } from './features/residents/ResidentsPage'
 import { ParkingPage } from './features/parking/ParkingPage'
 import { InvoicesPage } from './features/invoices/InvoicesPage'
 import { PricingPage } from './features/pricing/PricingPage'
+import { MepPage } from './features/mep/MepPage'
+import { ComplaintsPage } from './features/complaints/ComplaintsPage'
 import { getBuildings, type BuildingItem } from './data/api'
 
 const defaultBuildings: BuildingItem[] = [
@@ -127,11 +129,16 @@ export default function App() {
             <InvoicesPage query={query} buildingId={selectedBuildingId} />
           ) : active === 'pricing' ? (
             <PricingPage query={query} buildingName={selectedBuilding?.name} />
+          ) : active === 'mep' ? (
+            <MepPage query={query} buildingId={selectedBuildingId} />
+          ) : active === 'complaints' ? (
+            <ComplaintsPage query={query} buildingId={selectedBuildingId} />
           ) : (
             <ModulePlaceholder module={module} onBack={() => setActive('dashboard')} />
           )}
         </main>
       </div>
+      {import.meta.env.DEV && <Agentation />}
     </div>
   )
 }
