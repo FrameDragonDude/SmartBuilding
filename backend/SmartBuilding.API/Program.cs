@@ -273,6 +273,180 @@ app.MapPost("/api/tariffs/approve-draft", async (
 });
 
 
+// 5. KỸ THUẬT VẬN HÀNH MEP & CHỈ SỐ ĐIỆN NƯỚC (LONG - TRANG 3)
+
+app.MapGet("/api/utility-meters", async (
+    string? buildingId,
+    string? meterType,
+    string? search,
+    IUtilityRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetMeterListAsync(buildingId, meterType, search, token)));
+
+app.MapGet("/api/utility-usages", async (
+    string? buildingId,
+    int? floorNumber,
+    string? meterType,
+    int? month,
+    int? year,
+    string? search,
+    IUtilityRepository repository,
+    CancellationToken token) =>
+{
+    var m = month ?? DateTime.Now.Month;
+    var y = year ?? DateTime.Now.Year;
+    return Results.Ok(await repository.GetUsageListAsync(buildingId, floorNumber, meterType, m, y, search, token));
+});
+
+app.MapGet("/api/utility/summary", async (
+    string? buildingId,
+    int? month,
+    int? year,
+    IUtilityRepository repository,
+    CancellationToken token) =>
+{
+    var m = month ?? DateTime.Now.Month;
+    var y = year ?? DateTime.Now.Year;
+    return Results.Ok(await repository.GetSummaryMetricsAsync(buildingId, m, y, token));
+});
+
+app.MapPost("/api/utility/record", async (
+    RecordMeterReadingRequest request,
+    IUtilityRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.MeterId))
+        return Results.BadRequest(new { message = "Vui lòng chọn đồng hồ đo" });
+
+    try
+    {
+        var usageId = await repository.RecordReadingAsync(request, token);
+        return Results.Ok(new { usageId, message = "Ghi nhận chỉ số thành công!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+});
+
+app.MapPost("/api/utility/meters", async (
+    CreateMeterRequest request,
+    IUtilityRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.ApartmentId))
+        return Results.BadRequest(new { message = "Vui lòng chọn căn hộ" });
+    if (string.IsNullOrWhiteSpace(request.MeterSerialNumber))
+        return Results.BadRequest(new { message = "Số seri đồng hồ không được để trống" });
+
+    try
+    {
+        var meterId = await repository.RegisterMeterAsync(request, token);
+        return Results.Created($"/api/utility-meters/{meterId}", new { meterId, message = "Đăng ký lắp đặt công tơ mới thành công!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+});
+
+app.MapPost("/api/utility/lock-cycle", async (
+    string buildingId,
+    int month,
+    int year,
+    IUtilityRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.LockBillingCycleAsync(buildingId, month, year, token);
+    return Results.Ok(new { success, message = success ? "Đã chốt sổ chỉ số MEP toàn tòa nhà thành công!" : "Chưa hoàn tất: Vẫn còn căn hộ chưa ghi đủ số điện/nước." });
+});
+
+
+// 6. PHẢN ÁNH SỰ CỐ & NGHIỆM THU HIỆN TRƯỜNG (LONG - TRANG 9)
+
+app.MapGet("/api/complaints", async (
+    string? buildingId,
+    string? category,
+    string? status,
+    string? search,
+    IComplaintRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetListAsync(buildingId, category, status, search, token)));
+
+app.MapGet("/api/complaints/summary", async (
+    string? buildingId,
+    IComplaintRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetMetricsAsync(buildingId, token)));
+
+app.MapGet("/api/complaints/{id}", async (
+    string id,
+    IComplaintRepository repository,
+    CancellationToken token) =>
+{
+    var item = await repository.GetDetailAsync(id, token);
+    return item is null ? Results.NotFound(new { message = "Không tìm thấy phiếu khiếu nại" }) : Results.Ok(item);
+});
+
+app.MapPost("/api/complaints", async (
+    CreateComplaintRequest request,
+    IComplaintRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Content))
+        return Results.BadRequest(new { message = "Tiêu đề và nội dung phản ánh không được để trống" });
+
+    try
+    {
+        var id = await repository.CreateComplaintAsync(request, token);
+        return Results.Created($"/api/complaints/{id}", new { id, message = "Tiếp nhận phiếu phản ánh sự cố thành công!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: 500, title: "Lỗi tạo phản ánh");
+    }
+});
+
+app.MapPut("/api/complaints/{id}/assign", async (
+    string id,
+    AssignComplaintRequest request,
+    IComplaintRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.AssignComplaintAsync(request with { ComplaintId = id }, token);
+    return success
+        ? Results.Ok(new { message = $"Đã phân công xử lý cho '{request.AssignedToRoleOrName}' thành công!" })
+        : Results.NotFound(new { message = "Không tìm thấy phiếu cần phân công" });
+});
+
+app.MapPut("/api/complaints/{id}/resolve", async (
+    string id,
+    ResolveComplaintRequest request,
+    IComplaintRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.ResolvedImageUrl))
+        return Results.BadRequest(new { message = "Bắt buộc phải tải ảnh nghiệm thu thực tế trước khi hoàn thành" });
+
+    var success = await repository.ResolveComplaintAsync(request with { ComplaintId = id }, token);
+    return success
+        ? Results.Ok(new { message = "Nghiệm thu sự cố thành công! Đã lưu ảnh minh chứng sau sửa chữa." })
+        : Results.NotFound(new { message = "Không tìm thấy phiếu cần nghiệm thu" });
+});
+
+app.MapPut("/api/complaints/{id}/status", async (
+    string id,
+    UpdateComplaintStatusRequest request,
+    IComplaintRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.UpdateStatusAsync(id, request.Status, token);
+    return success
+        ? Results.Ok(new { message = $"Đã cập nhật trạng thái sự cố sang '{request.Status}' thành công!" })
+        : Results.NotFound(new { message = "Không tìm thấy phiếu khiếu nại" });
+});
+
+
 // SYSTEM
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
