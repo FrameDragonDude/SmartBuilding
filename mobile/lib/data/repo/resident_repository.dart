@@ -1,32 +1,38 @@
-import '../../common/network/api_client.dart';
-import '../model/resident_model.dart';
+import '../../domain/repo/i_resident_repository.dart';
+import '../datasources/resident_remote_datasource.dart';
 import '../model/resident_profile_model.dart';
 
-class ResidentRepository {
-  final ApiClient apiClient = ApiClient();
+class ResidentRepository implements IResidentRepository {
+  final IResidentRemoteDataSource remoteDataSource;
 
-  Future<List<ResidentModel>> getResidents({String search = ''}) async {
-    try {
-      final response = await apiClient.dio.get(
-        '/residents',
-        queryParameters: {'search': search},
-      );
-      final List data = response.data;
-      return data.map((json) => ResidentModel.fromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Failed to load residents: $e');
-    }
+  ResidentRepository({IResidentRemoteDataSource? remoteDataSource})
+      : remoteDataSource = remoteDataSource ?? ResidentRemoteDataSourceImpl();
+
+  Future<ResidentProfileDataModel> getFullProfile({String residentId = 'Res1'}) {
+    return remoteDataSource.getResidentProfile(residentId);
   }
 
-  Future<ResidentProfileDataModel> getFullProfile({String residentId = 'Res1'}) async {
-    try {
-      final response = await apiClient.dio.get(
-        '/residents/full-profile',
-        queryParameters: {'residentId': residentId},
-      );
-      return ResidentProfileDataModel.fromJson(response.data);
-    } catch (e) {
-      throw Exception('Không thể tải hồ sơ cư dân: $e');
-    }
+  @override
+  Future<ResidentProfileDataModel> getResidentProfile(String residentId) {
+    return remoteDataSource.getResidentProfile(residentId);
+  }
+
+  @override
+  Future<bool> registerVehicle({
+    required String residentId,
+    required String vehicleType,
+    required String licensePlate,
+    required String rfidCardCode,
+    String? brand,
+    String? slotCode,
+  }) {
+    return remoteDataSource.registerVehicle(
+      residentId: residentId,
+      vehicleType: vehicleType,
+      licensePlate: licensePlate,
+      rfidCardCode: rfidCardCode,
+      brand: brand,
+      slotCode: slotCode,
+    );
   }
 }

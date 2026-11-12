@@ -60,10 +60,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     final List<Widget> screens = [
       HomeScreen(residentId: widget.residentId),
-      const HoaDonScreen(),
-      const TienIchScreen(),
-      const KhieuNaiScreen(),
-      const CuDanScreen(),
+      HoaDonScreen(residentId: widget.residentId),
+      TienIchScreen(residentId: widget.residentId),
+      KhieuNaiScreen(residentId: widget.residentId),
+      CuDanScreen(residentId: widget.residentId),
     ];
 
     return BlocProvider(

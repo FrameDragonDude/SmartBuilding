@@ -1,20 +1,15 @@
-import '../../common/network/api_client.dart';
+import '../../domain/repo/i_home_repository.dart';
+import '../datasources/home_remote_datasource.dart';
 import '../model/home_data_model.dart';
 
-class HomeRepository {
-  final ApiClient apiClient;
+class HomeRepository implements IHomeRepository {
+  final IHomeRemoteDataSource remoteDataSource;
 
-  HomeRepository({ApiClient? apiClient}) : apiClient = apiClient ?? ApiClient();
+  HomeRepository({IHomeRemoteDataSource? remoteDataSource})
+      : remoteDataSource = remoteDataSource ?? HomeRemoteDataSourceImpl();
 
-  Future<HomeDataModel> getHomeData({String residentId = 'Res1'}) async {
-    try {
-      final response = await apiClient.dio.get(
-        '/home',
-        queryParameters: {'residentId': residentId},
-      );
-      return HomeDataModel.fromJson(response.data);
-    } catch (e) {
-      throw Exception('Không thể tải dữ liệu trang chủ: $e');
-    }
+  @override
+  Future<HomeDataModel> getHomeData({String residentId = 'Res1'}) {
+    return remoteDataSource.getHomeData(residentId: residentId);
   }
 }

@@ -1,68 +1,57 @@
-import 'package:dio/dio.dart';
-import '../../common/network/api_client.dart';
+import '../../common/mapper/amenity_mapper.dart';
+import '../../domain/entities/amenity_booking_detail.dart';
+import '../../domain/repo/i_amenity_repository.dart';
+import '../datasources/amenity_remote_datasource.dart';
+import '../model/amenity_model.dart';
 import '../model/amenity_data_model.dart';
 
-class AmenityRepository {
-  final ApiClient apiClient;
+class AmenityRepository implements IAmenityRepository {
+  final IAmenityRemoteDataSource remoteDataSource;
 
-  AmenityRepository({ApiClient? apiClient}) : apiClient = apiClient ?? ApiClient();
+  AmenityRepository({IAmenityRemoteDataSource? remoteDataSource})
+      : remoteDataSource = remoteDataSource ?? AmenityRemoteDataSourceImpl();
 
-  Future<List<AmenityModel>> getAmenities() async {
-    try {
-      final response = await apiClient.dio.get('/amenities');
-      final List data = response.data;
-      return data.map((json) => AmenityModel.fromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Không thể tải danh sách tiện ích: $e');
-    }
+  @override
+  Future<List<AmenityModel>> getAmenities() {
+    return remoteDataSource.getAmenities();
   }
 
-  Future<List<AmenityBookingModel>> getMyBookings({String residentId = 'Res1'}) async {
-    try {
-      final response = await apiClient.dio.get(
-        '/amenities/my-bookings',
-        queryParameters: {'residentId': residentId},
-      );
-      final List data = response.data;
-      return data.map((json) => AmenityBookingModel.fromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Không thể tải lịch đặt tiện ích: $e');
-    }
+  @override
+  Future<List<AmenityBookingModel>> getMyBookings({String residentId = 'Res1'}) {
+    return remoteDataSource.getMyBookings(residentId: residentId);
   }
 
-  Future<bool> bookAmenity({
+  @override
+  Future<AmenityBookingDetail> getBookingDetail(String bookingId) async {
+    final model = await remoteDataSource.getBookingDetail(bookingId);
+    return model.toEntity();
+  }
+
+  @override
+  Future<AmenityBookingDetail> getLatestBookingDetail({String residentId = 'Res1'}) async {
+    final model = await remoteDataSource.getLatestBookingDetail(residentId: residentId);
+    return model.toEntity();
+  }
+
+  @override
+  Future<String> bookAmenity({
     required String amenityId,
     required String residentId,
     required DateTime startTime,
     required DateTime endTime,
     int numberOfGuests = 1,
-  }) async {
-    try {
-      final response = await apiClient.dio.post(
-        '/amenities/book',
-        data: {
-          'amenityId': amenityId,
-          'residentId': residentId,
-          'startTime': startTime.toIso8601String(),
-          'endTime': endTime.toIso8601String(),
-          'numberOfGuests': numberOfGuests,
-        },
-      );
-      return response.statusCode == 201 || response.statusCode == 200;
-    } on DioException catch (e) {
-      final msg = e.response?.data?['message'] ?? 'Đặt lịch thất bại!';
-      throw Exception(msg);
-    } catch (e) {
-      throw Exception('Lỗi đặt lịch tiện ích: $e');
-    }
+  }) {
+    return remoteDataSource.bookAmenity(
+      amenityId: amenityId,
+      residentId: residentId,
+      startTime: startTime,
+      endTime: endTime,
+      numberOfGuests: numberOfGuests,
+    );
   }
 
-  Future<bool> cancelBooking(String bookingId) async {
-    try {
-      final response = await apiClient.dio.post('/amenities/bookings/$bookingId/cancel');
-      return response.statusCode == 200;
-    } catch (e) {
-      throw Exception('Hủy lịch đặt thất bại: $e');
-    }
+  @override
+  Future<bool> cancelBooking(String bookingId) {
+    return remoteDataSource.cancelBooking(bookingId);
   }
 }

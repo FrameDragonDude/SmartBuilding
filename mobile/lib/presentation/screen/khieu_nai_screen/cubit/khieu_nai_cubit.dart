@@ -1,12 +1,18 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/repo/complaint_repository.dart';
+import '../../../../domain/usecases/create_complaint_usecase.dart';
+import '../../../../domain/usecases/get_complaints_usecase.dart';
 import 'khieu_nai_state.dart';
 
 class KhieuNaiCubit extends Cubit<KhieuNaiState> {
-  final ComplaintRepository complaintRepository;
+  final GetComplaintsUseCase getComplaintsUseCase;
+  final CreateComplaintUseCase createComplaintUseCase;
 
-  KhieuNaiCubit({ComplaintRepository? complaintRepository})
-      : complaintRepository = complaintRepository ?? ComplaintRepository(),
+  KhieuNaiCubit({
+    GetComplaintsUseCase? getComplaintsUseCase,
+    CreateComplaintUseCase? createComplaintUseCase,
+  })  : getComplaintsUseCase = getComplaintsUseCase ?? GetComplaintsUseCase(ComplaintRepository()),
+        createComplaintUseCase = createComplaintUseCase ?? CreateComplaintUseCase(ComplaintRepository()),
         super(KhieuNaiInitial());
 
   Future<void> fetchComplaints({
@@ -20,7 +26,7 @@ class KhieuNaiCubit extends Cubit<KhieuNaiState> {
       if (filter == 'Đang xử lý') statusParam = 'Processing';
       if (filter == 'Đã hoàn thành') statusParam = 'Resolved';
 
-      final summary = await complaintRepository.getComplaints(
+      final summary = await getComplaintsUseCase.execute(
         residentId: residentId,
         status: statusParam,
       );
@@ -43,7 +49,7 @@ class KhieuNaiCubit extends Cubit<KhieuNaiState> {
     String? attachedImageUrl,
   }) async {
     try {
-      final success = await complaintRepository.createComplaint(
+      final success = await createComplaintUseCase.execute(
         residentId: residentId,
         title: title,
         content: content,

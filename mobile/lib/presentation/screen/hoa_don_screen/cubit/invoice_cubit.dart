@@ -1,12 +1,22 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/repo/invoice_repository.dart';
+import '../../../../domain/usecases/get_invoice_detail_usecase.dart';
+import '../../../../domain/usecases/get_resident_invoices_usecase.dart';
+import '../../../../domain/usecases/submit_payment_usecase.dart';
 import 'invoice_state.dart';
 
 class InvoiceCubit extends Cubit<InvoiceState> {
-  final InvoiceRepository invoiceRepository;
+  final GetResidentInvoicesUseCase getResidentInvoicesUseCase;
+  final GetInvoiceDetailUseCase getInvoiceDetailUseCase;
+  final SubmitPaymentUseCase submitPaymentUseCase;
 
-  InvoiceCubit({InvoiceRepository? invoiceRepository})
-      : invoiceRepository = invoiceRepository ?? InvoiceRepository(),
+  InvoiceCubit({
+    GetResidentInvoicesUseCase? getResidentInvoicesUseCase,
+    GetInvoiceDetailUseCase? getInvoiceDetailUseCase,
+    SubmitPaymentUseCase? submitPaymentUseCase,
+  })  : getResidentInvoicesUseCase = getResidentInvoicesUseCase ?? GetResidentInvoicesUseCase(InvoiceRepository()),
+        getInvoiceDetailUseCase = getInvoiceDetailUseCase ?? GetInvoiceDetailUseCase(InvoiceRepository()),
+        submitPaymentUseCase = submitPaymentUseCase ?? SubmitPaymentUseCase(InvoiceRepository()),
         super(InvoiceInitial());
 
   Future<void> fetchInvoices({
@@ -16,7 +26,7 @@ class InvoiceCubit extends Cubit<InvoiceState> {
   }) async {
     emit(InvoiceLoading());
     try {
-      final summary = await invoiceRepository.getResidentInvoices(
+      final summary = await getResidentInvoicesUseCase.execute(
         residentId: residentId,
         status: status,
         year: year,
@@ -24,7 +34,7 @@ class InvoiceCubit extends Cubit<InvoiceState> {
 
       if (summary.invoices.isNotEmpty) {
         final latestInvoice = summary.invoices.first;
-        final detail = await invoiceRepository.getResidentInvoiceDetail(latestInvoice.id);
+        final detail = await getInvoiceDetailUseCase.execute(latestInvoice.id);
         emit(InvoiceLoaded(summary: summary, selectedDetail: detail));
       } else {
         emit(InvoiceLoaded(summary: summary));
@@ -38,11 +48,9 @@ class InvoiceCubit extends Cubit<InvoiceState> {
     if (state is InvoiceLoaded) {
       final currentState = state as InvoiceLoaded;
       try {
-        final detail = await invoiceRepository.getResidentInvoiceDetail(invoiceId);
+        final detail = await getInvoiceDetailUseCase.execute(invoiceId);
         emit(currentState.copyWith(selectedDetail: detail));
-      } catch (e) {
-        // Keep current state
-      }
+      } catch (_) {}
     }
   }
 
@@ -60,7 +68,7 @@ class InvoiceCubit extends Cubit<InvoiceState> {
     String? payerNote,
   }) async {
     try {
-      final success = await invoiceRepository.submitPayment(
+      final success = await submitPaymentUseCase.execute(
         invoiceId: invoiceId,
         amount: amount,
         paymentMethod: paymentMethod,

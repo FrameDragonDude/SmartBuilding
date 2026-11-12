@@ -1,13 +1,19 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/model/auth_models.dart';
+import '../../../../domain/usecases/login_usecase.dart';
+import '../../../../domain/usecases/register_usecase.dart';
 import '../../../../data/repo/auth_repository.dart';
 import 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
-  final AuthRepository authRepository;
+  final LoginUseCase loginUseCase;
+  final RegisterUseCase registerUseCase;
 
-  AuthCubit({AuthRepository? authRepository})
-      : authRepository = authRepository ?? AuthRepository(),
+  AuthCubit({
+    LoginUseCase? loginUseCase,
+    RegisterUseCase? registerUseCase,
+  })  : loginUseCase = loginUseCase ?? LoginUseCase(AuthRepository()),
+        registerUseCase = registerUseCase ?? RegisterUseCase(AuthRepository()),
         super(AuthInitial());
 
   Future<void> login(String usernameOrEmail, String password) async {
@@ -17,8 +23,8 @@ class AuthCubit extends Cubit<AuthState> {
         usernameOrEmail: usernameOrEmail,
         password: password,
       );
-      final response = await authRepository.login(request);
-      emit(AuthSuccess(user: response, message: response.message));
+      final user = await loginUseCase.execute(request);
+      emit(AuthSuccess(user: user, message: user.message));
     } catch (e) {
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -42,8 +48,8 @@ class AuthCubit extends Cubit<AuthState> {
         username: username,
         password: password,
       );
-      final response = await authRepository.register(request);
-      emit(AuthSuccess(user: response, message: response.message));
+      final user = await registerUseCase.execute(request);
+      emit(AuthSuccess(user: user, message: user.message));
     } catch (e) {
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
 import '../../../../data/model/home_data_model.dart';
+import '../../dat_lich_screen/dat_lich_screen.dart';
 
 class AmenityBookingCard extends StatelessWidget {
   final AmenityBookingHomeModel? booking;
@@ -10,6 +11,7 @@ class AmenityBookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final amenityName = booking?.amenityName ?? "BBQ Tầng Thượng (Amn1)";
+    final bookingId = booking?.bookingId;
     final bookingDate = booking?.bookingDate ?? "12/09/2026";
     final timeRange = (booking?.startTime != null && booking?.endTime != null)
         ? "${booking!.startTime} - ${booking!.endTime}"
@@ -33,7 +35,14 @@ class AmenityBookingCard extends StatelessWidget {
                 ],
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DatLichScreen(bookingId: bookingId),
+                    ),
+                  );
+                },
                 style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
                 child: const Text("Chi tiết", style: TextStyle(color: AppColors.secondary, fontSize: 13, fontWeight: FontWeight.bold)),
               ),
@@ -55,71 +64,82 @@ class AmenityBookingCard extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Container(
-                  height: 160,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    image: const DecorationImage(
-                      image: NetworkImage('https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=1000&auto=format&fit=crop'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DatLichScreen(bookingId: bookingId),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(14),
                   child: Container(
-                    padding: const EdgeInsets.all(14),
+                    height: 160,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
-                      gradient: LinearGradient(
-                        colors: [Colors.black.withOpacity(0.85), Colors.black.withOpacity(0.2)],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
+                      image: const DecorationImage(
+                        image: NetworkImage('https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=1000&auto=format&fit=crop'),
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.85),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.outdoor_grill_outlined, color: AppColors.secondary, size: 14),
-                                  const SizedBox(width: 6),
-                                  Text(amenityName, style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: AppColors.activeStatusGreenBackground,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(statusText, style: const TextStyle(color: AppColors.mintGreen, fontSize: 11, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: LinearGradient(
+                          colors: [Colors.black.withOpacity(0.85), Colors.black.withOpacity(0.2)],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
                         ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(bookingDate, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.6),
-                                borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.85),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.outdoor_grill_outlined, color: AppColors.secondary, size: 14),
+                                    const SizedBox(width: 6),
+                                    Text(amenityName, style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
                               ),
-                              child: Text(timeRange, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                      ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.activeStatusGreenBackground,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(statusText, style: const TextStyle(color: AppColors.mintGreen, fontSize: 11, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(bookingDate, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(timeRange, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -136,7 +156,14 @@ class AmenityBookingCard extends StatelessWidget {
                       ],
                     ),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DatLichScreen(bookingId: bookingId),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.lightBlueContainer,
                         foregroundColor: AppColors.secondary,

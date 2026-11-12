@@ -106,6 +106,141 @@ public class AmenityRepository : IAmenityRepository
         return list;
     }
 
+    public async Task<AmenityBookingDetailDto?> GetBookingDetailAsync(string bookingId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        const string sql = """
+            SELECT
+                ab.Id AS BookingId,
+                ab.AmenityId,
+                am.Name AS AmenityName,
+                am.ImageUrl AS AmenityImageUrl,
+                am.MaxCapacity,
+                COALESCE(b.Name, 'Tòa Ruby Suites') AS BuildingName,
+                COALESCE(ap.ApartmentNumber, 'RB-0101') AS ApartmentNumber,
+                COALESCE(ap.FloorNumber, 38) AS FloorNumber,
+                COALESCE(r.FullName, 'Nguyễn Văn An') AS ResidentName,
+                COALESCE(r.IdentityCard, '079095001234') AS IdCardNumber,
+                DATE_FORMAT(ab.StartTime, '%d/%m/%Y') AS BookingDateRaw,
+                DATE_FORMAT(ab.StartTime, '%H:%i') AS StartTime,
+                DATE_FORMAT(ab.EndTime, '%H:%i') AS EndTime,
+                ab.NumberOfGuests,
+                ab.Status
+            FROM AmenityBookings ab
+            JOIN Amenities am ON am.Id = ab.AmenityId
+            LEFT JOIN Residents r ON r.Id = ab.ResidentId
+            LEFT JOIN Apartments ap ON ap.Id = ab.ApartmentId
+            LEFT JOIN Buildings b ON b.Id = ap.BuildingId
+            WHERE ab.Id = @BookingId
+            LIMIT 1;
+            """;
+
+        await using var cmd = new MySqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@BookingId", bookingId);
+
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (await reader.ReadAsync(cancellationToken))
+        {
+            var bId = GetStringSafe(reader, "BookingId");
+            var buildingName = GetStringSafe(reader, "BuildingName", "Tòa Ruby Suites");
+            var apartmentNum = GetStringSafe(reader, "ApartmentNumber", "RB-0101");
+            var floorNum = GetIntSafe(reader, "FloorNumber", 38);
+            var dateRaw = GetStringSafe(reader, "BookingDateRaw", "12/09/2026");
+            var status = GetStringSafe(reader, "Status", "Confirmed");
+
+            var amenityId = GetStringSafe(reader, "AmenityId");
+            var amenityName = GetStringSafe(reader, "AmenityName", "Tiện ích chung");
+            var locationText = amenityId switch {
+                "Amn1" => $"Bếp nướng BBQ-03 • Tầng 38 Tháp {buildingName}",
+                "Amn2" => $"Sân Tennis ngoài trời • Khu thể thao {buildingName}",
+                "Amn3" => $"Hồ bơi vô cực • Tầng mái Tháp {buildingName}",
+                "Amn4" => $"Phòng Gym & Cardio • Tầng 2 {buildingName}",
+                "Amn5" => $"Phòng sinh hoạt cộng đồng • Tầng 1 {buildingName}",
+                "Amn6" => $"Phòng Yoga & Thiền • Tầng 3 {buildingName}",
+                "Amn7" => $"Sân bóng rổ mini • Khu thể thao {buildingName}",
+                "Amn8" => $"Khu vui chơi trẻ em • Tầng 1 {buildingName}",
+                _ => $"{amenityName} • {buildingName}"
+            };
+
+            var cleanApt = apartmentNum.Replace("-", "");
+            var cleanDate = dateRaw.Replace("/", "");
+
+            return new AmenityBookingDetailDto
+            {
+                Id = bId,
+                BookingCode = $"#{bId}",
+                AmenityId = amenityId,
+                BlockName = $"KHỐI {buildingName.ToUpper()}",
+                AmenityTitle = amenityName,
+                LocationText = locationText,
+                TimeRange = $"{GetStringSafe(reader, "StartTime", "18:00")} - {GetStringSafe(reader, "EndTime", "20:00")}",
+                BookingDate = $"Hôm nay, {dateRaw}",
+                ApartmentNumber = $"Căn {apartmentNum}",
+                ResidentName = GetStringSafe(reader, "ResidentName", "Nguyễn Văn An"),
+                NumberOfGuests = GetIntSafe(reader, "NumberOfGuests", 1),
+                MaxCapacity = GetIntSafe(reader, "MaxCapacity", 20),
+                IdCardNumber = GetStringSafe(reader, "IdCardNumber", "079095001234"),
+                FeeText = "Miễn phí cư dân (Ruby Privilege)",
+                Status = status,
+                StatusText = status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase) ? "ĐÃ HỦY" : "ĐÃ XÁC NHẬN",
+                TicketCodeText = $"QR - {bId} - {cleanDate} - {cleanApt}",
+                QrData = $"QR-{bId}-{cleanDate}-{cleanApt}",
+                AmenityImageUrl = GetNullableString(reader, "AmenityImageUrl"),
+            };
+        }
+
+        return null;
+    }
+
+    private static string GetStringSafe(MySqlDataReader reader, string column, string defaultValue = "")
+    {
+        try
+        {
+            var ordinal = reader.GetOrdinal(column);
+            return reader.IsDBNull(ordinal) ? defaultValue : reader.GetString(ordinal);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    private static int GetIntSafe(MySqlDataReader reader, string column, int defaultValue = 0)
+    {
+        try
+        {
+            var ordinal = reader.GetOrdinal(column);
+            return reader.IsDBNull(ordinal) ? defaultValue : reader.GetInt32(ordinal);
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    public async Task<AmenityBookingDetailDto?> GetLatestBookingDetailAsync(string residentId, CancellationToken cancellationToken = default)
+    {
+        residentId = string.IsNullOrWhiteSpace(residentId) ? "Res1" : residentId;
+
+        await using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        const string sql = "SELECT Id FROM AmenityBookings WHERE ResidentId = @ResId ORDER BY StartTime DESC LIMIT 1;";
+        await using var cmd = new MySqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@ResId", residentId);
+
+        var bookingIdObj = await cmd.ExecuteScalarAsync(cancellationToken);
+        if (bookingIdObj != null)
+        {
+            return await GetBookingDetailAsync(bookingIdObj.ToString()!, cancellationToken);
+        }
+
+        // Default mock detailed data matching DB fallback
+        return new AmenityBookingDetailDto();
+    }
+
     public async Task<string> CreateBookingAsync(CreateAmenityBookingRequest request, CancellationToken cancellationToken = default)
     {
         await using var connection = _connectionFactory.CreateConnection();

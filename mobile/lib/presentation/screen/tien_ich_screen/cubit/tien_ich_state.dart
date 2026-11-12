@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../data/model/amenity_model.dart';
 import '../../../../data/model/amenity_data_model.dart';
 
 abstract class TienIchState extends Equatable {
@@ -50,9 +51,10 @@ class TienIchError extends TienIchState {
 
 class BookingSuccessState extends TienIchState {
   final String message;
+  final String? bookingId;
 
-  const BookingSuccessState(this.message);
+  const BookingSuccessState(this.message, {this.bookingId});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, bookingId];
 }

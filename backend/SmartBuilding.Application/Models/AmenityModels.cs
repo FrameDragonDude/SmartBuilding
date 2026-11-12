@@ -26,6 +26,29 @@ public class AmenityBookingDto
     public string CreatedAt { get; set; } = string.Empty;
 }
 
+public class AmenityBookingDetailDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string BookingCode { get; set; } = "#AB1";
+    public string AmenityId { get; set; } = string.Empty;
+    public string BlockName { get; set; } = "KHỐI RUBY SUITES";
+    public string AmenityTitle { get; set; } = "Vườn Nướng BBQ Tầng Thượng";
+    public string LocationText { get; set; } = "Bếp nướng BBQ-03 • Tầng 38 Tháp Ruby";
+    public string TimeRange { get; set; } = "18:00 - 20:00";
+    public string BookingDate { get; set; } = "Hôm nay, 12/09/2026";
+    public string ApartmentNumber { get; set; } = "Căn RB-0101";
+    public string ResidentName { get; set; } = "Nguyễn Văn An";
+    public int NumberOfGuests { get; set; } = 10;
+    public int MaxCapacity { get; set; } = 20;
+    public string IdCardNumber { get; set; } = "079095001234";
+    public string FeeText { get; set; } = "Miễn phí cư dân (Ruby Privilege)";
+    public string Status { get; set; } = "Confirmed";
+    public string StatusText { get; set; } = "ĐÃ XÁC NHẬN";
+    public string TicketCodeText { get; set; } = "QR - AB1 - 20260912 - RB0101";
+    public string QrData { get; set; } = "QR-AB1-20260912-RB0101";
+    public string? AmenityImageUrl { get; set; }
+}
+
 public class CreateAmenityBookingRequest
 {
     public string AmenityId { get; set; } = string.Empty;

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../configs/theme/app_color.dart';
-import '../../../data/model/amenity_data_model.dart';
+import '../../../data/model/amenity_model.dart';
+import '../dat_lich_screen/dat_lich_screen.dart';
 import 'cubit/tien_ich_cubit.dart';
 import 'cubit/tien_ich_state.dart';
 
@@ -14,6 +15,8 @@ class TienIchScreen extends StatelessWidget {
     int guests = 1;
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
     TimeOfDay selectedTime = const TimeOfDay(hour: 18, minute: 0);
+    final cubit = context.read<TienIchCubit>();
+    final parentContext = context;
 
     showModalBottomSheet(
       context: context,
@@ -151,7 +154,7 @@ class TienIchScreen extends StatelessWidget {
 
                   // Submit Button
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       final startTime = DateTime(
                         selectedDate.year,
                         selectedDate.month,
@@ -161,7 +164,9 @@ class TienIchScreen extends StatelessWidget {
                       );
                       final endTime = startTime.add(Duration(minutes: amenity.slotDurationMinutes));
 
-                      context.read<TienIchCubit>().bookAmenity(
+                      Navigator.pop(context); // close bottom sheet
+
+                      final bookingId = await cubit.bookAmenity(
                         amenityId: amenity.id,
                         residentId: residentId ?? 'Res1',
                         startTime: startTime,
@@ -169,7 +174,17 @@ class TienIchScreen extends StatelessWidget {
                         numberOfGuests: guests,
                       );
 
-                      Navigator.pop(context);
+                      if (parentContext.mounted && bookingId != null && bookingId.isNotEmpty) {
+                        Navigator.push(
+                          parentContext,
+                          MaterialPageRoute(
+                            builder: (context) => DatLichScreen(
+                              bookingId: bookingId,
+                              residentId: residentId ?? 'Res1',
+                            ),
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondary,
@@ -208,8 +223,36 @@ class TienIchScreen extends StatelessWidget {
                 SnackBar(
                   content: Text(state.message),
                   backgroundColor: AppColors.tertiary,
+                  action: state.bookingId != null && state.bookingId!.isNotEmpty
+                      ? SnackBarAction(
+                          label: 'Xem mã QR',
+                          textColor: Colors.white,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DatLichScreen(
+                                  bookingId: state.bookingId!,
+                                  residentId: residentId ?? 'Res1',
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : null,
                 ),
               );
+              if (state.bookingId != null && state.bookingId!.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DatLichScreen(
+                      bookingId: state.bookingId!,
+                      residentId: residentId ?? 'Res1',
+                    ),
+                  ),
+                );
+              }
             }
           },
           builder: (context, state) {
@@ -300,7 +343,7 @@ class TienIchScreen extends StatelessWidget {
                             ),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => context.read<TienIchCubit>().changeTab(1),
+                                onTap: () => context.read<TienIchCubit>().changeTab(1, residentId: residentId ?? 'Res1'),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 10),
                                   decoration: BoxDecoration(
@@ -471,105 +514,129 @@ class TienIchScreen extends StatelessWidget {
                               final b = myBookings[index];
                               final isConfirmed = b.status == 'Confirmed';
 
-                              return Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: AppColors.cardBorder),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.04),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 3),
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => DatLichScreen(
+                                        bookingId: b.id,
+                                        residentId: residentId ?? 'Res1',
+                                      ),
                                     ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            b.amenityName,
-                                            style: const TextStyle(
-                                              color: AppColors.textPrimary,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: isConfirmed
-                                                ? AppColors.activeStatusGreenBackground
-                                                : Colors.grey.shade200,
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          child: Text(
-                                            isConfirmed ? "Đã xác nhận" : (b.status == 'Completed' ? "Đã hoàn thành" : "Đã hủy"),
-                                            style: TextStyle(
-                                              color: isConfirmed ? AppColors.mintGreen : AppColors.textSecondary,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.calendar_today, size: 16, color: AppColors.secondary),
-                                        const SizedBox(width: 6),
-                                        Text(b.bookingDate, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                        const SizedBox(width: 16),
-                                        const Icon(Icons.access_time, size: 16, color: AppColors.secondary),
-                                        const SizedBox(width: 6),
-                                        Text('${b.startTime} - ${b.endTime}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.groups, size: 16, color: AppColors.textSecondary),
-                                        const SizedBox(width: 6),
-                                        Text('Số lượng: ${b.numberOfGuests} khách', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                                      ],
-                                    ),
-                                    if (isConfirmed) ...[
-                                      const Divider(height: 20),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(18),
+                                child: Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(color: AppColors.cardBorder),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.04),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    children: [
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          OutlinedButton(
-                                            onPressed: () {
-                                              context.read<TienIchCubit>().cancelBooking(b.id, residentId: residentId ?? 'Res1');
-                                            },
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor: Colors.red,
-                                              side: const BorderSide(color: Colors.red),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          Expanded(
+                                            child: Text(
+                                              b.amenityName,
+                                              style: const TextStyle(
+                                                color: AppColors.textPrimary,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
-                                            child: const Text('Hủy đặt lịch'),
                                           ),
-                                          ElevatedButton.icon(
-                                            icon: const Icon(Icons.qr_code, size: 16),
-                                            label: const Text('Mã QR Check-in'),
-                                            onPressed: () {},
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.lightBlueContainer,
-                                              foregroundColor: AppColors.secondary,
-                                              elevation: 0,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: isConfirmed
+                                                  ? AppColors.activeStatusGreenBackground
+                                                  : Colors.grey.shade200,
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              isConfirmed ? "Đã xác nhận" : (b.status == 'Completed' ? "Đã hoàn thành" : "Đã hủy"),
+                                              style: TextStyle(
+                                                color: isConfirmed ? AppColors.mintGreen : AppColors.textSecondary,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.calendar_today, size: 16, color: AppColors.secondary),
+                                          const SizedBox(width: 6),
+                                          Text(b.bookingDate, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                          const SizedBox(width: 16),
+                                          const Icon(Icons.access_time, size: 16, color: AppColors.secondary),
+                                          const SizedBox(width: 6),
+                                          Text('${b.startTime} - ${b.endTime}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.groups, size: 16, color: AppColors.textSecondary),
+                                          const SizedBox(width: 6),
+                                          Text('Số lượng: ${b.numberOfGuests} khách', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                        ],
+                                      ),
+                                      if (isConfirmed) ...[
+                                        const Divider(height: 20),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            OutlinedButton(
+                                              onPressed: () {
+                                                context.read<TienIchCubit>().cancelBooking(b.id, residentId: residentId ?? 'Res1');
+                                              },
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor: Colors.red,
+                                                side: const BorderSide(color: Colors.red),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                              ),
+                                              child: const Text('Hủy đặt lịch'),
+                                            ),
+                                            ElevatedButton.icon(
+                                              icon: const Icon(Icons.qr_code, size: 16),
+                                              label: const Text('Mã QR Check-in'),
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => DatLichScreen(
+                                                      bookingId: b.id,
+                                                      residentId: residentId ?? 'Res1',
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppColors.lightBlueContainer,
+                                                foregroundColor: AppColors.secondary,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
                               );
                             },

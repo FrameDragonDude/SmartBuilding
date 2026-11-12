@@ -403,6 +403,28 @@ app.MapGet("/api/amenities/my-bookings", async (
     CancellationToken token) =>
     Results.Ok(await repository.GetMyBookingsAsync(residentId ?? "Res1", token)));
 
+app.MapGet("/api/amenities/bookings/latest-detail", async (
+    string? residentId,
+    IAmenityRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetLatestBookingDetailAsync(residentId ?? "Res1", token)));
+
+app.MapGet("/api/amenities/bookings/{bookingId}/detail", async (
+    string bookingId,
+    IAmenityRepository repository,
+    CancellationToken token) =>
+{
+    try
+    {
+        var detail = await repository.GetBookingDetailAsync(bookingId, token);
+        return detail is null ? Results.NotFound(new { message = $"Không tìm thấy lịch đặt {bookingId}" }) : Results.Ok(detail);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.ToString(), statusCode: 500, title: "Lỗi tải chi tiết đặt lịch");
+    }
+});
+
 app.MapPost("/api/amenities/book", async (
     CreateAmenityBookingRequest request,
     IAmenityRepository repository,
