@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../configs/theme/app_color.dart';
-import '../../../domain/entities/invoice_entity.dart';
+import '../../../data/model/invoice_data_model.dart';
 import 'cubit/invoice_cubit.dart';
 import 'cubit/invoice_state.dart';
 import 'widgets/invoice_tab_bar.dart';
@@ -21,7 +21,7 @@ class HoaDonScreen extends StatelessWidget {
     );
   }
 
-  void _showPaymentModal(BuildContext context, InvoiceCubit cubit, ResidentInvoiceDetailEntity detail) {
+  void _showPaymentModal(BuildContext context, InvoiceCubit cubit, ResidentInvoiceDetailModel detail) {
     final payAmount = detail.remainingAmount > 0 ? detail.remainingAmount : detail.totalAmount;
     String selectedMethod = 'VietQR';
     final noteController = TextEditingController();

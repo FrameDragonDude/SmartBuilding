@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
-import '../../../../domain/entities/resident_profile_entity.dart';
+import '../../../../data/model/resident_profile_model.dart';
 
 class VehiclesParkingSection extends StatelessWidget {
-  final List<ResidentVehicleEntity>? vehicles;
+  final List<ResidentVehicleModel>? vehicles;
   final VoidCallback? onRegisterNewVehicle;
 
   const VehiclesParkingSection({
