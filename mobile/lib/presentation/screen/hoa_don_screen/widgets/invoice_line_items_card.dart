@@ -23,10 +23,12 @@ class InvoiceItemData {
 
 class InvoiceLineItemsCard extends StatelessWidget {
   final List<InvoiceItemData>? items;
+  final Function(InvoiceItemData item)? onMeterImageTap;
 
   const InvoiceLineItemsCard({
     super.key,
     this.items,
+    this.onMeterImageTap,
   });
 
   List<InvoiceItemData> get _defaultItems => const [
@@ -202,7 +204,7 @@ class InvoiceLineItemsCard extends StatelessWidget {
             if (item.meterImageAction != null) ...[
               const SizedBox(height: 2),
               GestureDetector(
-                onTap: () {},
+                onTap: () => onMeterImageTap?.call(item),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

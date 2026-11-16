@@ -59,7 +59,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
-      HomeScreen(residentId: widget.residentId),
+      HomeScreen(
+        residentId: widget.residentId,
+        onNavigateTab: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
       HoaDonScreen(residentId: widget.residentId),
       TienIchScreen(residentId: widget.residentId),
       KhieuNaiScreen(residentId: widget.residentId),

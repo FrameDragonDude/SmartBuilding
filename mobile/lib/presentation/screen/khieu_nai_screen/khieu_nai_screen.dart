@@ -326,6 +326,7 @@ class KhieuNaiScreen extends StatelessWidget {
                               itemBuilder: (context, index) {
                                 return ComplaintCard(
                                   data: cardDataList[index],
+                                  onTap: () => _showComplaintDetailDialog(context, cardDataList[index]),
                                 );
                               },
                             ),
@@ -352,6 +353,124 @@ class KhieuNaiScreen extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  void _showComplaintDetailDialog(BuildContext context, ComplaintCardData data) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.lightSlateContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                data.code,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.secondary),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                data.title,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.lightBlueContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildDetailRow('Vị trí:', data.location),
+                    const Divider(height: 12),
+                    _buildDetailRow('Thời gian gửi:', data.timeText ?? 'Gần đây'),
+                    const Divider(height: 12),
+                    _buildDetailRow('Trạng thái xử lý:', data.statusText),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Nội dung phản ánh:',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                data.description,
+                style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textSecondary),
+              ),
+              if (data.imageUrl != null && data.imageUrl!.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Text(
+                  'Hình ảnh minh chứng:',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    data.imageUrl!,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 120,
+                      color: AppColors.lightSlateContainer,
+                      child: const Center(
+                        child: Icon(Icons.broken_image_outlined, size: 40, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.secondary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }
