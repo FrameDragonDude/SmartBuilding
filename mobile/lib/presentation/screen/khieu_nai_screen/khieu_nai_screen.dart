@@ -47,10 +47,154 @@ class KhieuNaiScreen extends StatelessWidget {
     }
   }
 
+  void _showCreateComplaintDialog(BuildContext context, KhieuNaiCubit cubit, String currentResidentId) {
+    final formKey = GlobalKey<FormState>();
+    String category = 'Sanitation';
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+    final imageController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Gửi phản ánh & Sự cố mới',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: category,
+                        decoration: InputDecoration(
+                          labelText: 'Danh mục sự cố',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'Sanitation', child: Text('Vệ sinh môi trường')),
+                          DropdownMenuItem(value: 'Security', child: Text('An ninh & Trật tự')),
+                          DropdownMenuItem(value: 'Technical', child: Text('Kỹ thuật / Điện nước')),
+                          DropdownMenuItem(value: 'Noise', child: Text('Tiếng ồn')),
+                          DropdownMenuItem(value: 'Other', child: Text('Dịch vụ khác')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setModalState(() => category = val);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: titleController,
+                        decoration: InputDecoration(
+                          labelText: 'Tiêu đề sự cố *',
+                          hintText: 'VD: Rò rỉ nước tại bồn rửa, chập đèn hành lang...',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        validator: (value) => (value == null || value.trim().isEmpty)
+                            ? 'Vui lòng nhập tiêu đề phản ánh'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: contentController,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          labelText: 'Nội dung chi tiết *',
+                          hintText: 'Mô tả cụ thể vị trí, thời gian xảy ra và tình trạng sự cố...',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        validator: (value) => (value == null || value.trim().isEmpty)
+                            ? 'Vui lòng nhập nội dung chi tiết'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: imageController,
+                        decoration: InputDecoration(
+                          labelText: 'URL hình ảnh đính kèm (tùy chọn)',
+                          hintText: 'https://...',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.secondary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            if (formKey.currentState?.validate() ?? false) {
+                              Navigator.pop(context);
+                              cubit.createComplaint(
+                                residentId: currentResidentId,
+                                title: titleController.text.trim(),
+                                content: contentController.text.trim(),
+                                category: category,
+                                attachedImageUrl: imageController.text.trim().isNotEmpty
+                                    ? imageController.text.trim()
+                                    : null,
+                              );
+                            }
+                          },
+                          child: const Text(
+                            'Gửi phản ánh ngay',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentResId = residentId ?? 'Res1';
     return BlocProvider(
-      create: (context) => KhieuNaiCubit()..fetchComplaints(residentId: residentId ?? 'Res1'),
+      create: (context) => KhieuNaiCubit()..fetchComplaints(residentId: currentResId),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: BlocConsumer<KhieuNaiCubit, KhieuNaiState>(
@@ -96,7 +240,7 @@ class KhieuNaiScreen extends StatelessWidget {
                 children: [
                   RefreshIndicator(
                     onRefresh: () async {
-                      await context.read<KhieuNaiCubit>().fetchComplaints(residentId: residentId ?? 'Res1');
+                      await context.read<KhieuNaiCubit>().fetchComplaints(residentId: currentResId);
                     },
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -120,7 +264,7 @@ class KhieuNaiScreen extends StatelessWidget {
                           ComplaintFilterChips(
                             selectedFilter: state.selectedFilter,
                             onFilterSelected: (filter) {
-                              context.read<KhieuNaiCubit>().filterComplaints(filter, residentId: residentId ?? 'Res1');
+                              context.read<KhieuNaiCubit>().filterComplaints(filter, residentId: currentResId);
                             },
                           ),
                           const SizedBox(height: 16),
@@ -156,7 +300,7 @@ class KhieuNaiScreen extends StatelessWidget {
                     bottom: 16,
                     child: FloatingReportButton(
                       onPressed: () {
-                        // Create complaint dialog
+                        _showCreateComplaintDialog(context, context.read<KhieuNaiCubit>(), currentResId);
                       },
                     ),
                   ),

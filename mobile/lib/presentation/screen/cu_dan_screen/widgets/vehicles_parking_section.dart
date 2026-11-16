@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
+import '../../../../domain/entities/resident_profile_entity.dart';
 
 class VehiclesParkingSection extends StatelessWidget {
+  final List<ResidentVehicleEntity>? vehicles;
   final VoidCallback? onRegisterNewVehicle;
 
   const VehiclesParkingSection({
     super.key,
+    this.vehicles,
     this.onRegisterNewVehicle,
   });
 
@@ -40,9 +43,9 @@ class VehiclesParkingSection extends StatelessWidget {
                 color: AppColors.lightBlueContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                '2 xe',
-                style: TextStyle(
+              child: Text(
+                '${vehicles != null ? vehicles!.length : 2} xe',
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: AppColors.secondary,
@@ -116,32 +119,59 @@ class VehiclesParkingSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Vehicle 1: Mercedes-Benz C200
-        _buildVehicleCard(
-          icon: Icons.directions_car_outlined,
-          name: 'Mercedes-Benz C200',
-          rfidStatus: 'RFID Active',
-          subtitle: 'Màu: Đen Kim Loại • Sedan 5 chỗ',
-          plateNumber: '51H-888.66',
-          plateRegion: 'Biển số TP.HCM',
-          rfidCode: 'RFID-CAR-002',
-          vehicleId: 'OT-079095001234-51H88866',
-          parkingSlot: 'Hầm B1 • Ô B1-B1-CAR-01',
-        ),
-        const SizedBox(height: 12),
-
-        // Vehicle 2: Honda SH 150i
-        _buildVehicleCard(
-          icon: Icons.two_wheeler_outlined,
-          name: 'Honda SH 150i',
-          rfidStatus: 'RFID Active',
-          subtitle: 'Màu: Trắng Ngọc Trai • Tay ga',
-          plateNumber: '59E1-123.45',
-          plateRegion: 'Biển kiểm soát',
-          rfidCode: 'RFID-MB-001',
-          vehicleId: 'XM-079095001234-59E112345',
-          parkingSlot: 'Hầm B1 • Ô B1-B1-MOTO-01',
-        ),
+        if (vehicles != null && vehicles!.isNotEmpty)
+          ...vehicles!.map((v) {
+            IconData icon = Icons.directions_car_outlined;
+            String sub = 'Ô tô • ${v.brand ?? "Đăng ký"}';
+            final vt = v.vehicleType.toLowerCase();
+            if (vt.contains('moto') || vt.contains('máy') || vt.contains('motor')) {
+              icon = Icons.two_wheeler_outlined;
+              sub = 'Xe máy • ${v.brand ?? "Tay ga/Số"}';
+            } else if (vt.contains('đạp') || vt.contains('bike') || vt.contains('điện')) {
+              icon = Icons.pedal_bike_rounded;
+              sub = 'Xe đạp/Xe điện';
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: _buildVehicleCard(
+                icon: icon,
+                name: v.brand ?? (v.vehicleType == 'Car' ? 'Ô tô' : v.vehicleType == 'Motorcycle' ? 'Xe máy' : v.vehicleType),
+                rfidStatus: v.isActive ? 'RFID Active' : 'RFID Inactive',
+                subtitle: sub,
+                plateNumber: v.licensePlate,
+                plateRegion: 'Biển kiểm soát',
+                rfidCode: 'RFID-${v.id}',
+                vehicleId: v.id,
+                parkingSlot: v.slotCode != null ? 'Hầm B1 • Ô ${v.slotCode}' : 'Hầm B1 • Chưa gán ô cố định',
+              ),
+            );
+          })
+        else ...[
+          // Default fallback vehicles
+          _buildVehicleCard(
+            icon: Icons.directions_car_outlined,
+            name: 'Mercedes-Benz C200',
+            rfidStatus: 'RFID Active',
+            subtitle: 'Màu: Đen Kim Loại • Sedan 5 chỗ',
+            plateNumber: '51H-888.66',
+            plateRegion: 'Biển số TP.HCM',
+            rfidCode: 'RFID-CAR-002',
+            vehicleId: 'OT-079095001234-51H88866',
+            parkingSlot: 'Hầm B1 • Ô B1-B1-CAR-01',
+          ),
+          const SizedBox(height: 12),
+          _buildVehicleCard(
+            icon: Icons.two_wheeler_outlined,
+            name: 'Honda SH 150i',
+            rfidStatus: 'RFID Active',
+            subtitle: 'Màu: Trắng Ngọc Trai • Tay ga',
+            plateNumber: '59E1-123.45',
+            plateRegion: 'Biển kiểm soát',
+            rfidCode: 'RFID-MB-001',
+            vehicleId: 'XM-079095001234-59E112345',
+            parkingSlot: 'Hầm B1 • Ô B1-B1-MOTO-01',
+          ),
+        ],
         const SizedBox(height: 14),
 
         // Register New Vehicle Full-width Button

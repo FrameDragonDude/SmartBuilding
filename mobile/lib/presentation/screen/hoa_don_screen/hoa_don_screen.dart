@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../configs/theme/app_color.dart';
+import '../../../domain/entities/invoice_entity.dart';
 import 'cubit/invoice_cubit.dart';
 import 'cubit/invoice_state.dart';
 import 'widgets/invoice_tab_bar.dart';
@@ -17,6 +18,248 @@ class HoaDonScreen extends StatelessWidget {
     return amount.toStringAsFixed(0).replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]}.',
+    );
+  }
+
+  void _showPaymentModal(BuildContext context, InvoiceCubit cubit, ResidentInvoiceDetailEntity detail) {
+    final payAmount = detail.remainingAmount > 0 ? detail.remainingAmount : detail.totalAmount;
+    String selectedMethod = 'VietQR';
+    final noteController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Thanh toán hóa đơn',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Invoice Info Summary Card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightBlueContainer,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Mã HĐ: ${detail.invoiceCode}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                              ),
+                              Text(
+                                'Căn ${detail.apartmentNumber}',
+                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Số tiền cần thanh toán:',
+                                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                              ),
+                              Text(
+                                '${_formatCurrency(payAmount)} đ',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.secondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    const Text(
+                      'Phương thức thanh toán:',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Method 1: VietQR
+                    RadioListTile<String>(
+                      value: 'VietQR',
+                      groupValue: selectedMethod,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: AppColors.secondary,
+                      title: const Text('Chuyển khoản VietQR (Napas 24/7)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      subtitle: const Text('Quét mã QR tự động điền số tiền & nội dung', style: TextStyle(fontSize: 12)),
+                      secondary: const Icon(Icons.qr_code_2_rounded, color: AppColors.secondary),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedMethod = val);
+                      },
+                    ),
+
+                    // If VietQR is selected, display dynamic QR
+                    if (selectedMethod == 'VietQR') ...[
+                      Center(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.cardBorder),
+                            borderRadius: BorderRadius.circular(16),
+                            color: Colors.white,
+                          ),
+                          child: Column(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  'https://img.vietqr.io/image/970422-0901234567-compact2.png?amount=${payAmount.toInt()}&addInfo=${detail.invoiceCode}',
+                                  width: 170,
+                                  height: 170,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 170,
+                                    height: 170,
+                                    color: Colors.grey.shade100,
+                                    child: const Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.qr_code_rounded, size: 64, color: AppColors.secondary),
+                                        SizedBox(height: 8),
+                                        Text('Mã QR MBBank', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text('Ngân hàng Quân Đội (MBBank) • 0901234567', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                              Text('Nội dung: ${detail.invoiceCode}', style: const TextStyle(fontSize: 12, color: AppColors.secondary, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    // Method 2: MoMo
+                    RadioListTile<String>(
+                      value: 'MoMo',
+                      groupValue: selectedMethod,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: AppColors.secondary,
+                      title: const Text('Ví điện tử MoMo', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      subtitle: const Text('Thanh toán qua ứng dụng Ví MoMo', style: TextStyle(fontSize: 12)),
+                      secondary: const Icon(Icons.account_balance_wallet_outlined, color: Colors.pinkAccent),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedMethod = val);
+                      },
+                    ),
+
+                    // Method 3: VNPay
+                    RadioListTile<String>(
+                      value: 'VNPay',
+                      groupValue: selectedMethod,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: AppColors.secondary,
+                      title: const Text('Cổng VNPAY / Thẻ ATM nội địa & Quốc tế', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      subtitle: const Text('Visa, Master, Napas...', style: TextStyle(fontSize: 12)),
+                      secondary: const Icon(Icons.credit_card_rounded, color: Colors.blueAccent),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedMethod = val);
+                      },
+                    ),
+
+                    // Method 4: Cash
+                    RadioListTile<String>(
+                      value: 'Cash',
+                      groupValue: selectedMethod,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: AppColors.secondary,
+                      title: const Text('Tiền mặt tại Văn phòng Quản lý (BQL)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      secondary: const Icon(Icons.payments_outlined, color: Colors.green),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedMethod = val);
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: noteController,
+                      decoration: InputDecoration(
+                        labelText: 'Ghi chú người nộp (tùy chọn)',
+                        hintText: 'VD: Căn hộ ${detail.apartmentNumber} đã thanh toán',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+                        label: const Text(
+                          'Xác nhận thanh toán',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          cubit.payInvoice(
+                            invoiceId: detail.id,
+                            amount: payAmount,
+                            paymentMethod: selectedMethod,
+                            payerNote: noteController.text.trim().isNotEmpty ? noteController.text.trim() : null,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -189,10 +432,7 @@ class HoaDonScreen extends StatelessWidget {
                         InvoiceActionButtons(
                           paymentButtonText: 'Thanh toán ngay',
                           onPaymentPressed: () {
-                            context.read<InvoiceCubit>().payInvoice(
-                              invoiceId: detail.id,
-                              amount: detail.remainingAmount > 0 ? detail.remainingAmount : detail.totalAmount,
-                            );
+                            _showPaymentModal(context, context.read<InvoiceCubit>(), detail);
                           },
                         ),
                       const SizedBox(height: 16),

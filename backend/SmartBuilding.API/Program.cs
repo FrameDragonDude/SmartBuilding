@@ -53,6 +53,15 @@ app.MapGet("/api/residents/full-profile", async (
     return profile is null ? Results.NotFound(new { message = "Không tìm thấy hồ sơ cư dân" }) : Results.Ok(profile);
 });
 
+app.MapGet("/api/residents/{residentId}/profile", async (
+    string residentId,
+    IResidentRepository repository,
+    CancellationToken token) =>
+{
+    var profile = await repository.GetFullProfileAsync(residentId, token);
+    return profile is null ? Results.NotFound(new { message = "Không tìm thấy hồ sơ cư dân" }) : Results.Ok(profile);
+});
+
 app.MapGet("/api/residents/{apartmentId}/detail", async (
     string apartmentId,
     IResidentRepository repository,
@@ -143,6 +152,38 @@ app.MapPost("/api/parking/register", async (
     catch (Exception ex)
     {
         return Results.Problem(detail: ex.Message, statusCode: 500, title: "Lỗi đăng ký xe");
+    }
+});
+
+app.MapPost("/api/residents/register-vehicle", async (
+    CreateVehicleRequest request,
+    IParkingRepository parkingRepo,
+    IResidentRepository residentRepo,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.ResidentId))
+        return Results.BadRequest(new { message = "Vui lòng chọn cư dân" });
+    if (string.IsNullOrWhiteSpace(request.LicensePlate))
+        return Results.BadRequest(new { message = "Biển số xe không được để trống" });
+    if (string.IsNullOrWhiteSpace(request.RfidCardCode))
+        return Results.BadRequest(new { message = "Mã thẻ RFID không được để trống" });
+
+    var req = request;
+    if (string.IsNullOrWhiteSpace(req.ApartmentId))
+    {
+        var profile = await residentRepo.GetFullProfileAsync(req.ResidentId, token);
+        var aptId = profile?.ContractInfo?.ApartmentNumber ?? "B1-F01-01";
+        req = req with { ApartmentId = aptId };
+    }
+
+    try
+    {
+        var vehicleId = await parkingRepo.RegisterVehicleAsync(req, token);
+        return Results.Created($"/api/parking/register/{vehicleId}", new { vehicleId, message = "Đăng ký phương tiện thành công!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: 500, title: "Lỗi đăng ký phương tiện");
     }
 });
 
@@ -440,6 +481,25 @@ app.MapGet("/api/complaints/{id}", async (
 
 app.MapPost("/api/complaints", async (
     CreateComplaintRequest request,
+    IComplaintRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Content))
+        return Results.BadRequest(new { message = "Tiêu đề và nội dung phản ánh không được để trống" });
+
+    try
+    {
+        var id = await repository.CreateComplaintAsync(request, token);
+        return Results.Created($"/api/complaints/{id}", new { id, complaintId = id, message = "Tiếp nhận phiếu phản ánh sự cố thành công!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: 500, title: "Lỗi tạo phản ánh");
+    }
+});
+
+app.MapPost("/api/complaints/create", async (
+    CreateComplaintApiRequest request,
     IComplaintRepository repository,
     CancellationToken token) =>
 {
