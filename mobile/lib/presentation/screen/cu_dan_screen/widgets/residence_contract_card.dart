@@ -251,7 +251,7 @@ class ResidenceContractCard extends StatelessWidget {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () => _showContractFileDialog(context),
                       child: Row(
                         children: const [
                           Text(
@@ -275,6 +275,116 @@ class ResidenceContractCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showContractFileDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent, size: 24),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Hợp đồng Cư trú Điện tử',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.lightBlueContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildInfoRow('Mã hợp đồng:', contractCode),
+                    const Divider(height: 12),
+                    _buildInfoRow('Tên tệp:', fileName),
+                    const Divider(height: 12),
+                    _buildInfoRow('Vai trò:', tenantRole),
+                    const Divider(height: 12),
+                    _buildInfoRow('Trạng thái:', statusText),
+                    const Divider(height: 12),
+                    _buildInfoRow('Hiệu lực:', '$startDate - $endDate'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.verified_rounded, color: Colors.green, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Chứng thư số: Đã ký điện tử bởi Ban Quản Lý Tòa Nhà Smart Building.',
+                        style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Đang tải tệp hợp đồng về thiết bị...'),
+                  backgroundColor: AppColors.secondary,
+                ),
+              );
+            },
+            child: const Text('Tải về', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.secondary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Đóng', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
