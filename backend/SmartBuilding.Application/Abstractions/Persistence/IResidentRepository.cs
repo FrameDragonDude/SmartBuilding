@@ -20,4 +20,6 @@ public interface IResidentRepository
     Task<IReadOnlyList<ApartmentOption>> GetApartmentsAsync(string? buildingId, CancellationToken cancellationToken);
 
     Task<string> CreateResidentAsync(CreateResidentRequest request, CancellationToken cancellationToken);
+
+    Task<ResidentProfileDataDto?> GetFullProfileAsync(string residentId, CancellationToken cancellationToken);
 }

@@ -1,6 +1,8 @@
 import '../../domain/entities/amenity.dart';
 
 class AmenityModel extends Amenity {
+  final bool isActive;
+
   AmenityModel({
     required super.id,
     required super.name,
@@ -9,6 +11,7 @@ class AmenityModel extends Amenity {
     required super.openTime,
     required super.closeTime,
     required super.slotDurationMinutes,
+    this.isActive = true,
   });
 
   factory AmenityModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +23,7 @@ class AmenityModel extends Amenity {
       openTime: json['openTime'] ?? '',
       closeTime: json['closeTime'] ?? '',
       slotDurationMinutes: json['slotDurationMinutes'] ?? 60,
+      isActive: json['isActive'] ?? true,
     );
   }
 
@@ -32,6 +36,7 @@ class AmenityModel extends Amenity {
       'openTime': openTime,
       'closeTime': closeTime,
       'slotDurationMinutes': slotDurationMinutes,
+      'isActive': isActive,
     };
   }
 }

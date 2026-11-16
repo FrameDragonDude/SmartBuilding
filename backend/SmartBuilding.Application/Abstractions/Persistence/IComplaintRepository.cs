@@ -4,6 +4,7 @@ namespace SmartBuilding.Application.Abstractions.Persistence;
 
 public interface IComplaintRepository
 {
+    // Web Admin APIs (Long)
     Task<IReadOnlyList<ComplaintListItem>> GetListAsync(
         string? buildingId,
         string? category,
@@ -35,4 +36,15 @@ public interface IComplaintRepository
         string complaintId,
         string status,
         CancellationToken cancellationToken);
+
+    // Mobile App APIs (Phong)
+    Task<ComplaintSummaryDataDto> GetComplaintsAsync(
+        string? residentId,
+        string? status,
+        string? category,
+        CancellationToken cancellationToken = default);
+
+    Task<string> CreateComplaintAsync(
+        CreateComplaintApiRequest request,
+        CancellationToken cancellationToken = default);
 }

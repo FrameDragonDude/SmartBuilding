@@ -8,6 +8,10 @@ namespace SmartBuilding.Infrastructure.Repositories;
 
 public sealed class ComplaintRepository(MySqlConnectionFactory connectionFactory) : IComplaintRepository
 {
+    private readonly MySqlConnectionFactory _connectionFactory = connectionFactory;
+
+    #region Web Admin Methods (Long)
+
     public async Task<IReadOnlyList<ComplaintListItem>> GetListAsync(
         string? buildingId,
         string? category,
@@ -39,7 +43,7 @@ public sealed class ComplaintRepository(MySqlConnectionFactory connectionFactory
 
         sql += " ORDER BY c.CreatedAt DESC;";
 
-        await using var connection = connectionFactory.CreateConnection();
+        await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, connection);
 
@@ -101,7 +105,7 @@ public sealed class ComplaintRepository(MySqlConnectionFactory connectionFactory
         if (!string.IsNullOrWhiteSpace(buildingId))
             sql += " AND b.Id = @BuildingId";
 
-        await using var connection = connectionFactory.CreateConnection();
+        await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, connection);
 
@@ -112,12 +116,12 @@ public sealed class ComplaintRepository(MySqlConnectionFactory connectionFactory
         if (await reader.ReadAsync(cancellationToken))
         {
             return new ComplaintSummaryMetrics(
-                Convert.ToInt32(reader.GetInt64("TotalComplaints")),
-                Convert.ToInt32(reader.GetDecimal("PendingCount")),
-                Convert.ToInt32(reader.GetDecimal("AssignedCount")),
-                Convert.ToInt32(reader.GetDecimal("ProcessingCount")),
-                Convert.ToInt32(reader.GetDecimal("ResolvedCount")),
-                Convert.ToInt32(reader.GetDecimal("ClosedCount")));
+                reader.IsDBNull(reader.GetOrdinal("TotalComplaints")) ? 0 : Convert.ToInt32(reader["TotalComplaints"]),
+                reader.IsDBNull(reader.GetOrdinal("PendingCount")) ? 0 : Convert.ToInt32(reader["PendingCount"]),
+                reader.IsDBNull(reader.GetOrdinal("AssignedCount")) ? 0 : Convert.ToInt32(reader["AssignedCount"]),
+                reader.IsDBNull(reader.GetOrdinal("ProcessingCount")) ? 0 : Convert.ToInt32(reader["ProcessingCount"]),
+                reader.IsDBNull(reader.GetOrdinal("ResolvedCount")) ? 0 : Convert.ToInt32(reader["ResolvedCount"]),
+                reader.IsDBNull(reader.GetOrdinal("ClosedCount")) ? 0 : Convert.ToInt32(reader["ClosedCount"]));
         }
 
         return new ComplaintSummaryMetrics(0, 0, 0, 0, 0, 0);
@@ -141,7 +145,7 @@ public sealed class ComplaintRepository(MySqlConnectionFactory connectionFactory
             LIMIT 1;
             """;
 
-        await using var connection = connectionFactory.CreateConnection();
+        await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, connection);
         command.Parameters.AddWithValue("@Id", complaintId);
@@ -175,17 +179,30 @@ public sealed class ComplaintRepository(MySqlConnectionFactory connectionFactory
         CreateComplaintRequest request,
         CancellationToken cancellationToken)
     {
-        const string sql = """
-            INSERT INTO ComplaintRequests (Id, ResidentId, ApartmentId, Category, Title, Content, AttachedImageUrl, Status, CreatedAt)
-            VALUES (@Id, @ResidentId, @ApartmentId, @Category, @Title, @Content, @AttachedImageUrl, 'Pending', NOW(6));
+        const string checkSql = "SELECT COUNT(1) FROM Apartments WHERE Id = @AptId;";
+        const string insertSql = """
+            INSERT INTO ComplaintRequests (
+                Id, ResidentId, ApartmentId, Category, Title, Content, AttachedImageUrl, Status, CreatedAt
+            ) VALUES (
+                @Id, @ResidentId, @ApartmentId, @Category, @Title, @Content, @AttachedImageUrl, 'Pending', NOW(6)
+            );
             """;
 
-        var id = Guid.NewGuid().ToString();
-        await using var connection = connectionFactory.CreateConnection();
+        await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
-        await using var command = new MySqlCommand(sql, connection);
 
-        command.Parameters.AddWithValue("@Id", id);
+        await using (var checkCmd = new MySqlCommand(checkSql, connection))
+        {
+            checkCmd.Parameters.AddWithValue("@AptId", request.ApartmentId);
+            var exists = Convert.ToInt32(await checkCmd.ExecuteScalarAsync(cancellationToken));
+            if (exists == 0)
+                throw new InvalidOperationException($"Căn hộ mã {request.ApartmentId} không tồn tại trong hệ thống.");
+        }
+
+        var newId = $"CR-{DateTime.UtcNow:yyMMdd}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
+
+        await using var command = new MySqlCommand(insertSql, connection);
+        command.Parameters.AddWithValue("@Id", newId);
         command.Parameters.AddWithValue("@ResidentId", request.ResidentId);
         command.Parameters.AddWithValue("@ApartmentId", request.ApartmentId);
         command.Parameters.AddWithValue("@Category", request.Category);
@@ -194,7 +211,7 @@ public sealed class ComplaintRepository(MySqlConnectionFactory connectionFactory
         command.Parameters.AddWithValue("@AttachedImageUrl", (object?)request.AttachedImageUrl ?? DBNull.Value);
 
         await command.ExecuteNonQueryAsync(cancellationToken);
-        return id;
+        return newId;
     }
 
     public async Task<bool> AssignComplaintAsync(
@@ -204,16 +221,16 @@ public sealed class ComplaintRepository(MySqlConnectionFactory connectionFactory
         const string sql = """
             UPDATE ComplaintRequests
             SET Status = 'Assigned'
-            WHERE Id = @Id;
+            WHERE Id = @Id AND Status IN ('Pending', 'Assigned');
             """;
 
-        await using var connection = connectionFactory.CreateConnection();
+        await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, connection);
-
         command.Parameters.AddWithValue("@Id", request.ComplaintId);
-        var rows = await command.ExecuteNonQueryAsync(cancellationToken);
-        return rows > 0;
+
+        var affected = await command.ExecuteNonQueryAsync(cancellationToken);
+        return affected > 0;
     }
 
     public async Task<bool> ResolveComplaintAsync(
@@ -228,15 +245,14 @@ public sealed class ComplaintRepository(MySqlConnectionFactory connectionFactory
             WHERE Id = @Id;
             """;
 
-        await using var connection = connectionFactory.CreateConnection();
+        await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, connection);
-
         command.Parameters.AddWithValue("@Id", request.ComplaintId);
         command.Parameters.AddWithValue("@ResolvedImageUrl", request.ResolvedImageUrl);
 
-        var rows = await command.ExecuteNonQueryAsync(cancellationToken);
-        return rows > 0;
+        var affected = await command.ExecuteNonQueryAsync(cancellationToken);
+        return affected > 0;
     }
 
     public async Task<bool> UpdateStatusAsync(
@@ -244,21 +260,135 @@ public sealed class ComplaintRepository(MySqlConnectionFactory connectionFactory
         string status,
         CancellationToken cancellationToken)
     {
-        var sql = """
+        const string sql = """
             UPDATE ComplaintRequests
             SET Status = @Status,
-                ResolvedAt = (CASE WHEN @Status IN ('Resolved', 'Closed') AND ResolvedAt IS NULL THEN NOW(6) ELSE ResolvedAt END)
+                ResolvedAt = CASE WHEN @Status IN ('Resolved', 'Closed') THEN NOW(6) ELSE ResolvedAt END
             WHERE Id = @Id;
             """;
 
-        await using var connection = connectionFactory.CreateConnection();
+        await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, connection);
-
         command.Parameters.AddWithValue("@Id", complaintId);
         command.Parameters.AddWithValue("@Status", status);
 
-        var rows = await command.ExecuteNonQueryAsync(cancellationToken);
-        return rows > 0;
+        var affected = await command.ExecuteNonQueryAsync(cancellationToken);
+        return affected > 0;
     }
+
+    #endregion
+
+    #region Mobile App Methods (Phong)
+
+    public async Task<ComplaintSummaryDataDto> GetComplaintsAsync(
+        string? residentId,
+        string? status,
+        string? category,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        var result = new ComplaintSummaryDataDto();
+
+        const string sql = """
+            SELECT
+                c.Id,
+                a.ApartmentNumber,
+                c.Category,
+                c.Title,
+                c.Content,
+                c.AttachedImageUrl,
+                c.ResolvedImageUrl,
+                c.Status,
+                DATE_FORMAT(c.CreatedAt, '%d/%m/%Y %H:%i') AS CreatedAt,
+                DATE_FORMAT(c.ResolvedAt, '%d/%m/%Y %H:%i') AS ResolvedAt
+            FROM ComplaintRequests c
+            JOIN Apartments a ON a.Id = c.ApartmentId
+            WHERE (@ResidentId IS NULL OR @ResidentId = '' OR c.ResidentId = @ResidentId)
+              AND (@Status IS NULL OR @Status = '' OR @Status = 'All' OR LOWER(c.Status) = LOWER(@Status))
+              AND (@Category IS NULL OR @Category = '' OR LOWER(c.Category) = LOWER(@Category))
+            ORDER BY c.CreatedAt DESC;
+            """;
+
+        await using (var cmd = new MySqlCommand(sql, connection))
+        {
+            cmd.Parameters.AddWithValue("@ResidentId", residentId ?? "");
+            cmd.Parameters.AddWithValue("@Status", status ?? "");
+            cmd.Parameters.AddWithValue("@Category", category ?? "");
+
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var st = reader.GetString("Status");
+                result.TotalCount++;
+
+                if (st == "Pending") result.PendingCount++;
+                else if (st == "Assigned" || st == "Processing") result.ProcessingCount++;
+                else if (st == "Resolved" || st == "Closed") result.ResolvedCount++;
+
+                result.Complaints.Add(new ComplaintListItemDto
+                {
+                    Id = reader.GetString("Id"),
+                    ApartmentNumber = reader.GetString("ApartmentNumber"),
+                    Category = reader.GetString("Category"),
+                    Title = reader.GetString("Title"),
+                    Content = reader.GetString("Content"),
+                    AttachedImageUrl = GetNullableString(reader, "AttachedImageUrl"),
+                    ResolvedImageUrl = GetNullableString(reader, "ResolvedImageUrl"),
+                    Status = st,
+                    CreatedAt = reader.GetString("CreatedAt"),
+                    ResolvedAt = GetNullableString(reader, "ResolvedAt")
+                });
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<string> CreateComplaintAsync(
+        CreateComplaintApiRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        var id = $"CR{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
+
+        var apartmentId = request.ApartmentId;
+        if (string.IsNullOrWhiteSpace(apartmentId))
+        {
+            const string aptSql = "SELECT ApartmentId FROM ApartmentHistories WHERE ResidentId = @ResId AND IsCurrent = 1 LIMIT 1;";
+            await using var cmd = new MySqlCommand(aptSql, connection);
+            cmd.Parameters.AddWithValue("@ResId", request.ResidentId);
+            var res = await cmd.ExecuteScalarAsync(cancellationToken);
+            apartmentId = res?.ToString() ?? "B1-F01-01";
+        }
+
+        const string insertSql = """
+            INSERT INTO ComplaintRequests (Id, ResidentId, ApartmentId, Category, Title, Content, AttachedImageUrl, Status, CreatedAt)
+            VALUES (@Id, @ResidentId, @ApartmentId, @Category, @Title, @Content, @Image, 'Pending', NOW(6));
+            """;
+
+        await using (var cmd = new MySqlCommand(insertSql, connection))
+        {
+            cmd.Parameters.AddWithValue("@Id", id);
+            cmd.Parameters.AddWithValue("@ResidentId", request.ResidentId);
+            cmd.Parameters.AddWithValue("@ApartmentId", apartmentId);
+            cmd.Parameters.AddWithValue("@Category", request.Category);
+            cmd.Parameters.AddWithValue("@Title", request.Title.Trim());
+            cmd.Parameters.AddWithValue("@Content", request.Content.Trim());
+            cmd.Parameters.AddWithValue("@Image", (object?)request.AttachedImageUrl ?? DBNull.Value);
+
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        return id;
+    }
+
+    private static string? GetNullableString(MySqlDataReader reader, string column) =>
+        reader.IsDBNull(reader.GetOrdinal(column)) ? null : reader.GetString(column);
+
+    #endregion
 }

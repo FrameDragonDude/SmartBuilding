@@ -408,6 +408,216 @@ public sealed class ResidentRepository(MySqlConnectionFactory connectionFactory)
         }
     }
 
+    public async Task<ResidentProfileDataDto?> GetFullProfileAsync(string residentId, CancellationToken cancellationToken)
+    {
+        residentId = string.IsNullOrWhiteSpace(residentId) ? "Res1" : residentId;
+
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        const string resSql = """
+            SELECT
+                r.Id,
+                r.FullName,
+                r.IdentityCardNumber,
+                r.PhoneNumber,
+                r.Email,
+                DATE_FORMAT(r.DateOfBirth, '%d/%m/%Y') AS DateOfBirth,
+                r.Gender,
+                r.AvatarUrl,
+                DATE_FORMAT(r.CreatedAt, '%d/%m/%Y %H:%i') AS CreatedAt
+            FROM Residents r
+            WHERE r.Id = @ResidentId
+            LIMIT 1;
+            """;
+
+        ResidentProfileDataDto? profile = null;
+
+        await using (var cmd = new MySqlCommand(resSql, connection))
+        {
+            cmd.Parameters.AddWithValue("@ResidentId", residentId);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                profile = new ResidentProfileDataDto
+                {
+                    ResidentInfo = new ResidentProfileInfoDto
+                    {
+                        Id = reader.GetString("Id"),
+                        FullName = reader.GetString("FullName"),
+                        IdentityCardNumber = reader.GetString("IdentityCardNumber"),
+                        PhoneNumber = reader.GetString("PhoneNumber"),
+                        Email = GetNullableString(reader, "Email"),
+                        DateOfBirth = reader.GetString("DateOfBirth"),
+                        Gender = reader.GetString("Gender"),
+                        AvatarUrl = GetNullableString(reader, "AvatarUrl"),
+                        CreatedAt = reader.GetString("CreatedAt")
+                    }
+                };
+            }
+        }
+
+        if (profile == null) return null;
+
+        // 1. Contract Info
+        const string contractSql = """
+            SELECT
+                ah.Id AS HistoryId,
+                ah.ApartmentId,
+                a.ApartmentNumber,
+                b.Name AS BuildingName,
+                f.Description AS FloorDescription,
+                a.Area,
+                a.RoomsCount,
+                a.BathroomsCount,
+                ah.ContractType,
+                DATE_FORMAT(ah.StartDate, '%d/%m/%Y') AS StartDate,
+                DATE_FORMAT(ah.EndDate, '%d/%m/%Y') AS EndDate,
+                ah.ContractFileUrl,
+                ah.IsCurrent
+            FROM ApartmentHistories ah
+            JOIN Apartments a ON a.Id = ah.ApartmentId
+            JOIN Floors f ON f.Id = a.FloorId
+            JOIN Buildings b ON b.Id = f.BuildingId
+            WHERE ah.ResidentId = @ResidentId AND ah.IsCurrent = 1
+            LIMIT 1;
+            """;
+
+        await using (var cmd = new MySqlCommand(contractSql, connection))
+        {
+            cmd.Parameters.AddWithValue("@ResidentId", residentId);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                profile.ContractInfo = new ApartmentContractInfoDto
+                {
+                    HistoryId = reader.GetString("HistoryId"),
+                    ApartmentId = reader.GetString("ApartmentId"),
+                    ApartmentNumber = reader.GetString("ApartmentNumber"),
+                    BuildingName = reader.GetString("BuildingName"),
+                    FloorDescription = reader.GetString("FloorDescription"),
+                    Area = reader.GetDecimal("Area"),
+                    RoomsCount = reader.GetInt32("RoomsCount"),
+                    BathroomsCount = reader.GetInt32("BathroomsCount"),
+                    ContractType = reader.GetString("ContractType"),
+                    StartDate = reader.GetString("StartDate"),
+                    EndDate = GetNullableString(reader, "EndDate"),
+                    ContractFileUrl = GetNullableString(reader, "ContractFileUrl"),
+                    IsCurrent = reader.GetBoolean("IsCurrent")
+                };
+            }
+        }
+
+        // 2. Documents
+        const string docSql = """
+            SELECT
+                Id,
+                DocumentType,
+                DocumentNumber,
+                DATE_FORMAT(IssuedDate, '%d/%m/%Y') AS IssuedDate,
+                IssuedPlace,
+                AttachmentUrl,
+                VerificationStatus
+            FROM ResidentDocuments
+            WHERE ResidentId = @ResidentId;
+            """;
+
+        await using (var cmd = new MySqlCommand(docSql, connection))
+        {
+            cmd.Parameters.AddWithValue("@ResidentId", residentId);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                profile.Documents.Add(new ResidentDocumentDto
+                {
+                    Id = reader.GetString("Id"),
+                    DocumentType = reader.GetString("DocumentType"),
+                    DocumentNumber = GetNullableString(reader, "DocumentNumber"),
+                    IssuedDate = GetNullableString(reader, "IssuedDate"),
+                    IssuedPlace = GetNullableString(reader, "IssuedPlace"),
+                    AttachmentUrl = reader.GetString("AttachmentUrl"),
+                    VerificationStatus = reader.GetString("VerificationStatus")
+                });
+            }
+        }
+
+        // 3. Vehicles
+        const string vehicleSql = """
+            SELECT
+                v.Id,
+                v.VehicleType,
+                v.LicensePlate,
+                v.RfidCardCode,
+                v.Brand,
+                v.RegistrationPaperUrl,
+                v.VehicleImageUrl,
+                v.IsActive,
+                ps.SlotCode,
+                CONCAT('Hầm ', ps.BasementLevel) AS BasementLevel
+            FROM Vehicles v
+            LEFT JOIN ParkingSlots ps ON ps.VehicleId = v.Id
+            WHERE v.ResidentId = @ResidentId;
+            """;
+
+        await using (var cmd = new MySqlCommand(vehicleSql, connection))
+        {
+            cmd.Parameters.AddWithValue("@ResidentId", residentId);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                profile.Vehicles.Add(new ResidentVehicleDto
+                {
+                    Id = reader.GetString("Id"),
+                    VehicleType = reader.GetString("VehicleType"),
+                    LicensePlate = reader.GetString("LicensePlate"),
+                    RfidCardCode = reader.GetString("RfidCardCode"),
+                    Brand = GetNullableString(reader, "Brand"),
+                    RegistrationPaperUrl = GetNullableString(reader, "RegistrationPaperUrl"),
+                    VehicleImageUrl = GetNullableString(reader, "VehicleImageUrl"),
+                    IsActive = reader.GetBoolean("IsActive"),
+                    SlotCode = GetNullableString(reader, "SlotCode"),
+                    BasementLevel = GetNullableString(reader, "BasementLevel")
+                });
+            }
+        }
+
+        // 4. Account Info
+        const string accSql = """
+            SELECT
+                a.Id AS AccountId,
+                a.Username,
+                a.Email,
+                a.IsActive,
+                IFNULL(r.RoleName, 'Cư dân chính thức') AS RoleName,
+                DATE_FORMAT(a.CreatedAt, '%d/%m/%Y %H:%i') AS CreatedAt
+            FROM Accounts a
+            LEFT JOIN UserRoles ur ON ur.AccountId = a.Id
+            LEFT JOIN Roles r ON r.Id = ur.RoleId
+            WHERE a.ResidentId = @ResidentId
+            LIMIT 1;
+            """;
+
+        await using (var cmd = new MySqlCommand(accSql, connection))
+        {
+            cmd.Parameters.AddWithValue("@ResidentId", residentId);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                profile.AccountInfo = new AccountInfoDto
+                {
+                    AccountId = reader.GetString("AccountId"),
+                    Username = reader.GetString("Username"),
+                    Email = reader.GetString("Email"),
+                    IsActive = reader.GetBoolean("IsActive"),
+                    RoleName = reader.GetString("RoleName"),
+                    CreatedAt = reader.GetString("CreatedAt")
+                };
+            }
+        }
+
+        return profile;
+    }
+
     private static string? GetNullableString(MySqlDataReader reader, string column) =>
         reader.IsDBNull(reader.GetOrdinal(column)) ? null : reader.GetString(column);
 

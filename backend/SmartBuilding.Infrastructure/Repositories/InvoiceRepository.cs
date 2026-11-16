@@ -431,6 +431,347 @@ public sealed class InvoiceRepository(MySqlConnectionFactory connectionFactory) 
         }
     }
 
+    // RESIDENT MOBILE INVOICE APIS IMPLEMENTATION
+
+    public async Task<ResidentInvoiceSummaryDto> GetResidentInvoicesAsync(
+        string? residentId,
+        string? status,
+        int? year,
+        CancellationToken cancellationToken)
+    {
+        residentId = string.IsNullOrWhiteSpace(residentId) ? "Res1" : residentId;
+
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        var result = new ResidentInvoiceSummaryDto();
+
+        const string sql = """
+            SELECT
+                mi.Id,
+                mi.InvoiceCode,
+                a.ApartmentNumber,
+                mi.BillingMonth,
+                mi.BillingYear,
+                mi.TotalAmount,
+                mi.PaidAmount,
+                mi.Status,
+                DATE_FORMAT(mi.DueDate, '%d/%m/%Y') AS DueDate,
+                DATE_FORMAT(mi.GracePeriodUntil, '%d/%m/%Y') AS GracePeriodUntil,
+                DATE_FORMAT(mi.CreatedAt, '%d/%m/%Y %H:%i') AS CreatedAt
+            FROM MonthlyInvoices mi
+            JOIN Apartments a ON a.Id = mi.ApartmentId
+            JOIN ApartmentHistories ah ON ah.ApartmentId = a.Id AND ah.IsCurrent = 1
+            WHERE ah.ResidentId = @ResidentId
+              AND (@Status IS NULL OR @Status = '' OR @Status = 'All' OR LOWER(mi.Status) = LOWER(@Status))
+              AND (@Year IS NULL OR mi.BillingYear = @Year)
+            ORDER BY mi.BillingYear DESC, mi.BillingMonth DESC;
+            """;
+
+        await using (var cmd = new MySqlCommand(sql, connection))
+        {
+            cmd.Parameters.AddWithValue("@ResidentId", residentId);
+            cmd.Parameters.AddWithValue("@Status", status ?? "");
+            cmd.Parameters.AddWithValue("@Year", (object?)year ?? DBNull.Value);
+
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var total = reader.GetDecimal("TotalAmount");
+                var paid = reader.GetDecimal("PaidAmount");
+                var invStatus = reader.GetString("Status");
+
+                if (invStatus != "Paid")
+                {
+                    result.TotalUnpaidAmount += (total - paid);
+                    result.UnpaidCount++;
+                    if (invStatus == "Overdue") result.OverdueCount++;
+                }
+                else
+                {
+                    result.TotalPaidAmount += paid;
+                }
+
+                result.Invoices.Add(new ResidentInvoiceListItemDto
+                {
+                    Id = reader.GetString("Id"),
+                    InvoiceCode = reader.GetString("InvoiceCode"),
+                    ApartmentNumber = reader.GetString("ApartmentNumber"),
+                    BillingMonth = reader.GetInt32("BillingMonth"),
+                    BillingYear = reader.GetInt32("BillingYear"),
+                    TotalAmount = total,
+                    PaidAmount = paid,
+                    Status = invStatus,
+                    DueDate = reader.GetString("DueDate"),
+                    GracePeriodUntil = GetNullableString(reader, "GracePeriodUntil"),
+                    CreatedAt = reader.GetString("CreatedAt")
+                });
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<ResidentInvoiceDetailDto?> GetResidentInvoiceDetailAsync(
+        string invoiceId,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        const string headerSql = """
+            SELECT
+                mi.Id,
+                mi.InvoiceCode,
+                a.ApartmentNumber,
+                r.FullName AS ResidentName,
+                mi.BillingMonth,
+                mi.BillingYear,
+                mi.TotalAmount,
+                mi.PaidAmount,
+                mi.Status,
+                DATE_FORMAT(mi.DueDate, '%d/%m/%Y') AS DueDate,
+                DATE_FORMAT(mi.GracePeriodUntil, '%d/%m/%Y') AS GracePeriodUntil
+            FROM MonthlyInvoices mi
+            JOIN Apartments a ON a.Id = mi.ApartmentId
+            LEFT JOIN ApartmentHistories ah ON ah.ApartmentId = a.Id AND ah.IsCurrent = 1
+            LEFT JOIN Residents r ON r.Id = ah.ResidentId
+            WHERE mi.Id = @InvoiceId OR mi.InvoiceCode = @InvoiceId
+            LIMIT 1;
+            """;
+
+        ResidentInvoiceDetailDto? detail = null;
+
+        await using (var cmd = new MySqlCommand(headerSql, connection))
+        {
+            cmd.Parameters.AddWithValue("@InvoiceId", invoiceId);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                detail = new ResidentInvoiceDetailDto
+                {
+                    Id = reader.GetString("Id"),
+                    InvoiceCode = reader.GetString("InvoiceCode"),
+                    ApartmentNumber = reader.GetString("ApartmentNumber"),
+                    ResidentName = GetNullableString(reader, "ResidentName"),
+                    BillingMonth = reader.GetInt32("BillingMonth"),
+                    BillingYear = reader.GetInt32("BillingYear"),
+                    TotalAmount = reader.GetDecimal("TotalAmount"),
+                    PaidAmount = reader.GetDecimal("PaidAmount"),
+                    Status = reader.GetString("Status"),
+                    DueDate = reader.GetString("DueDate"),
+                    GracePeriodUntil = GetNullableString(reader, "GracePeriodUntil")
+                };
+            }
+        }
+
+        if (detail == null) return null;
+
+        // 1. Invoice Line Items
+        const string itemsSql = """
+            SELECT Id, ItemType, Description, Quantity, UnitPrice, LineTotal
+            FROM InvoiceDetails
+            WHERE InvoiceId = @InvoiceId;
+            """;
+
+        await using (var cmd = new MySqlCommand(itemsSql, connection))
+        {
+            cmd.Parameters.AddWithValue("@InvoiceId", detail.Id);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                detail.LineItems.Add(new InvoiceLineItemDto
+                {
+                    Id = reader.GetString("Id"),
+                    ItemType = reader.GetString("ItemType"),
+                    Description = reader.GetString("Description"),
+                    Quantity = reader.GetDecimal("Quantity"),
+                    UnitPrice = reader.GetDecimal("UnitPrice"),
+                    LineTotal = reader.GetDecimal("LineTotal")
+                });
+            }
+        }
+
+        // 2. Utility Readings
+        const string utilitySql = """
+            SELECT
+                um.MeterType,
+                um.MeterSerialNumber,
+                uu.PreviousReading,
+                uu.CurrentReading,
+                uu.Consumption,
+                uu.CalculatedAmount,
+                uu.ProofImageUrl
+            FROM UtilityUsages uu
+            JOIN UtilityMeters um ON um.Id = uu.MeterId
+            JOIN Apartments a ON a.Id = um.ApartmentId
+            JOIN MonthlyInvoices mi ON mi.ApartmentId = a.Id AND mi.BillingMonth = uu.BillingMonth AND mi.BillingYear = uu.BillingYear
+            WHERE mi.Id = @InvoiceId;
+            """;
+
+        await using (var cmd = new MySqlCommand(utilitySql, connection))
+        {
+            cmd.Parameters.AddWithValue("@InvoiceId", detail.Id);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                detail.UtilityReadings.Add(new UtilityReadingDto
+                {
+                    MeterType = reader.GetString("MeterType"),
+                    MeterSerialNumber = reader.GetString("MeterSerialNumber"),
+                    PreviousReading = reader.GetDecimal("PreviousReading"),
+                    CurrentReading = reader.GetDecimal("CurrentReading"),
+                    Consumption = reader.GetDecimal("Consumption"),
+                    CalculatedAmount = reader.GetDecimal("CalculatedAmount"),
+                    ProofImageUrl = GetNullableString(reader, "ProofImageUrl")
+                });
+            }
+        }
+
+        // 3. Payments History
+        const string paymentsSql = """
+            SELECT
+                Id,
+                TransactionCode,
+                PaymentMethod,
+                Amount,
+                DATE_FORMAT(PaymentDate, '%d/%m/%Y %H:%i') AS PaymentDate,
+                Status,
+                ProofReceiptUrl,
+                PayerNote
+            FROM Payments
+            WHERE InvoiceId = @InvoiceId
+            ORDER BY PaymentDate DESC;
+            """;
+
+        await using (var cmd = new MySqlCommand(paymentsSql, connection))
+        {
+            cmd.Parameters.AddWithValue("@InvoiceId", detail.Id);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                detail.Payments.Add(new InvoicePaymentHistoryDto
+                {
+                    Id = reader.GetString("Id"),
+                    TransactionCode = reader.GetString("TransactionCode"),
+                    PaymentMethod = reader.GetString("PaymentMethod"),
+                    Amount = reader.GetDecimal("Amount"),
+                    PaymentDate = reader.GetString("PaymentDate"),
+                    Status = reader.GetString("Status"),
+                    ProofReceiptUrl = GetNullableString(reader, "ProofReceiptUrl"),
+                    PayerNote = GetNullableString(reader, "PayerNote")
+                });
+            }
+        }
+
+        // 4. Late Penalties
+        const string penaltySql = """
+            SELECT
+                Id,
+                OverdueDays,
+                InterestRate,
+                PenaltyAmount,
+                Reason,
+                IsResolved
+            FROM LatePaymentPenalties
+            WHERE InvoiceId = @InvoiceId;
+            """;
+
+        await using (var cmd = new MySqlCommand(penaltySql, connection))
+        {
+            cmd.Parameters.AddWithValue("@InvoiceId", detail.Id);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                detail.Penalties.Add(new InvoicePenaltyDto
+                {
+                    Id = reader.GetString("Id"),
+                    OverdueDays = reader.GetInt32("OverdueDays"),
+                    InterestRate = reader.GetDecimal("InterestRate"),
+                    PenaltyAmount = reader.GetDecimal("PenaltyAmount"),
+                    Reason = reader.GetString("Reason"),
+                    IsResolved = reader.GetBoolean("IsResolved")
+                });
+            }
+        }
+
+        return detail;
+    }
+
+    public async Task<bool> SubmitPaymentAsync(
+        string invoiceId,
+        SubmitInvoicePaymentRequest request,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var tx = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            const string invSql = "SELECT TotalAmount, PaidAmount FROM MonthlyInvoices WHERE Id = @InvoiceId FOR UPDATE;";
+            decimal totalAmount = 0, currentPaid = 0;
+            await using (var cmd = new MySqlCommand(invSql, connection, tx))
+            {
+                cmd.Parameters.AddWithValue("@InvoiceId", invoiceId);
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                if (await reader.ReadAsync(cancellationToken))
+                {
+                    totalAmount = reader.GetDecimal("TotalAmount");
+                    currentPaid = reader.GetDecimal("PaidAmount");
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            var paymentId = "Pay-" + Guid.NewGuid().ToString("N")[..8];
+            var txnCode = $"TXN_{request.PaymentMethod.ToUpper()}_{DateTime.Now:yyyyMMdd}_{Guid.NewGuid().ToString("N")[..4]}";
+            var newPaidAmount = currentPaid + request.Amount;
+            var newStatus = newPaidAmount >= totalAmount ? "Paid" : "PartiallyPaid";
+
+            const string insertPaySql = """
+                INSERT INTO Payments (Id, InvoiceId, TransactionCode, PaymentMethod, Amount, ProofReceiptUrl, PaymentDate, Status, PayerNote)
+                VALUES (@Id, @InvoiceId, @TxnCode, @Method, @Amount, @ProofUrl, NOW(6), 'Success', @Note);
+                """;
+
+            await using (var payCmd = new MySqlCommand(insertPaySql, connection, tx))
+            {
+                payCmd.Parameters.AddWithValue("@Id", paymentId);
+                payCmd.Parameters.AddWithValue("@InvoiceId", invoiceId);
+                payCmd.Parameters.AddWithValue("@TxnCode", txnCode);
+                payCmd.Parameters.AddWithValue("@Method", request.PaymentMethod);
+                payCmd.Parameters.AddWithValue("@Amount", request.Amount);
+                payCmd.Parameters.AddWithValue("@ProofUrl", (object?)request.ProofReceiptUrl ?? DBNull.Value);
+                payCmd.Parameters.AddWithValue("@Note", (object?)request.PayerNote ?? DBNull.Value);
+                await payCmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            const string updateInvSql = """
+                UPDATE MonthlyInvoices
+                SET PaidAmount = @NewPaidAmount, Status = @NewStatus
+                WHERE Id = @InvoiceId;
+                """;
+
+            await using (var updCmd = new MySqlCommand(updateInvSql, connection, tx))
+            {
+                updCmd.Parameters.AddWithValue("@NewPaidAmount", newPaidAmount);
+                updCmd.Parameters.AddWithValue("@NewStatus", newStatus);
+                updCmd.Parameters.AddWithValue("@InvoiceId", invoiceId);
+                await updCmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await tx.CommitAsync(cancellationToken);
+            return true;
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
     private static string? GetNullableString(MySqlDataReader reader, string column) =>
         reader.IsDBNull(reader.GetOrdinal(column)) ? null : reader.GetString(column);
 }

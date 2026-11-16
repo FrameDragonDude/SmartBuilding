@@ -44,6 +44,15 @@ app.MapGet("/api/residents/summary", async (
     CancellationToken token) =>
     Results.Ok(await repository.GetMetricsAsync(buildingId, token)));
 
+app.MapGet("/api/residents/full-profile", async (
+    string? residentId,
+    IResidentRepository repository,
+    CancellationToken token) =>
+{
+    var profile = await repository.GetFullProfileAsync(residentId ?? "Res1", token);
+    return profile is null ? Results.NotFound(new { message = "Không tìm thấy hồ sơ cư dân" }) : Results.Ok(profile);
+});
+
 app.MapGet("/api/residents/{apartmentId}/detail", async (
     string apartmentId,
     IResidentRepository repository,
@@ -150,6 +159,40 @@ app.MapPost("/api/parking/{slotId}/release", async (
 
 
 // 3. HÓA ĐƠN & THU PHÍ (INVOICES & BILLING & RECONCILIATION)
+
+app.MapGet("/api/invoices/resident", async (
+    string? residentId,
+    string? status,
+    int? year,
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetResidentInvoicesAsync(residentId, status, year, token)));
+
+app.MapGet("/api/invoices/{invoiceId}/resident-detail", async (
+    string invoiceId,
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+{
+    var detail = await repository.GetResidentInvoiceDetailAsync(invoiceId, token);
+    return detail is null ? Results.NotFound(new { message = $"Không tìm thấy hóa đơn {invoiceId}" }) : Results.Ok(detail);
+});
+
+app.MapPost("/api/invoices/{invoiceId}/pay", async (
+    string invoiceId,
+    SubmitInvoicePaymentRequest request,
+    IInvoiceRepository repository,
+    CancellationToken token) =>
+{
+    if (request.Amount <= 0)
+    {
+        return Results.BadRequest(new { message = "Số tiền thanh toán phải lớn hơn 0!" });
+    }
+
+    var success = await repository.SubmitPaymentAsync(invoiceId, request, token);
+    return success
+        ? Results.Ok(new { message = "Thanh toán hóa đơn thành công!" })
+        : Results.NotFound(new { message = "Không tìm thấy hóa đơn để thanh toán." });
+});
 
 app.MapGet("/api/invoices", async (
     string? search,
@@ -362,16 +405,23 @@ app.MapPost("/api/utility/lock-cycle", async (
 });
 
 
-// 6. PHẢN ÁNH SỰ CỐ & NGHIỆM THU HIỆN TRƯỜNG (LONG - TRANG 9)
+// 6. PHẢN ÁNH SỰ CỐ & NGHIỆM THU HIỆN TRƯỜNG (WEB & MOBILE COMPLAINTS)
 
 app.MapGet("/api/complaints", async (
     string? buildingId,
+    string? residentId,
     string? category,
     string? status,
     string? search,
     IComplaintRepository repository,
     CancellationToken token) =>
-    Results.Ok(await repository.GetListAsync(buildingId, category, status, search, token)));
+{
+    if (!string.IsNullOrWhiteSpace(residentId))
+    {
+        return Results.Ok(await repository.GetComplaintsAsync(residentId, status, category, token));
+    }
+    return Results.Ok(await repository.GetListAsync(buildingId, category, status, search, token));
+});
 
 app.MapGet("/api/complaints/summary", async (
     string? buildingId,
@@ -399,7 +449,7 @@ app.MapPost("/api/complaints", async (
     try
     {
         var id = await repository.CreateComplaintAsync(request, token);
-        return Results.Created($"/api/complaints/{id}", new { id, message = "Tiếp nhận phiếu phản ánh sự cố thành công!" });
+        return Results.Created($"/api/complaints/{id}", new { id, complaintId = id, message = "Tiếp nhận phiếu phản ánh sự cố thành công!" });
     }
     catch (Exception ex)
     {
@@ -444,6 +494,123 @@ app.MapPut("/api/complaints/{id}/status", async (
     return success
         ? Results.Ok(new { message = $"Đã cập nhật trạng thái sự cố sang '{request.Status}' thành công!" })
         : Results.NotFound(new { message = "Không tìm thấy phiếu khiếu nại" });
+});
+
+
+// 7. MÀN HÌNH TRANG CHỦ (HOME SCREEN - MOBILE)
+
+app.MapGet("/api/home", async (
+    string? residentId,
+    IHomeRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetHomeDataAsync(residentId, token)));
+
+
+// 8. XÁC THỰC & TÀI KHOẢN (AUTH & ACCOUNTS)
+
+app.MapPost("/api/auth/login", async (
+    LoginRequest request,
+    IAuthRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.UsernameOrEmail) || string.IsNullOrWhiteSpace(request.Password))
+    {
+        return Results.BadRequest(new { message = "Vui lòng nhập tên đăng nhập/email và mật khẩu!" });
+    }
+
+    var result = await repository.LoginAsync(request, token);
+    return result is not null
+        ? Results.Ok(result)
+        : Results.BadRequest(new { message = "Tên đăng nhập hoặc mật khẩu không chính xác!" });
+});
+
+app.MapPost("/api/auth/register", async (
+    RegisterRequest request,
+    IAuthRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.FullName))
+    {
+        return Results.BadRequest(new { message = "Vui lòng điền đầy đủ thông tin bắt buộc!" });
+    }
+
+    try
+    {
+        var result = await repository.RegisterAsync(request, token);
+        return Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: 400, title: "Lỗi đăng ký");
+    }
+});
+
+
+// 9. TIỆN ÍCH & ĐẶT LỊCH (AMENITIES - MOBILE)
+
+app.MapGet("/api/amenities", async (
+    IAmenityRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetAmenitiesAsync(token)));
+
+app.MapGet("/api/amenities/my-bookings", async (
+    string? residentId,
+    IAmenityRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetMyBookingsAsync(residentId ?? "Res1", token)));
+
+app.MapGet("/api/amenities/bookings/latest-detail", async (
+    string? residentId,
+    IAmenityRepository repository,
+    CancellationToken token) =>
+    Results.Ok(await repository.GetLatestBookingDetailAsync(residentId ?? "Res1", token)));
+
+app.MapGet("/api/amenities/bookings/{bookingId}/detail", async (
+    string bookingId,
+    IAmenityRepository repository,
+    CancellationToken token) =>
+{
+    try
+    {
+        var detail = await repository.GetBookingDetailAsync(bookingId, token);
+        return detail is null ? Results.NotFound(new { message = $"Không tìm thấy lịch đặt {bookingId}" }) : Results.Ok(detail);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.ToString(), statusCode: 500, title: "Lỗi tải chi tiết đặt lịch");
+    }
+});
+
+app.MapPost("/api/amenities/book", async (
+    CreateAmenityBookingRequest request,
+    IAmenityRepository repository,
+    CancellationToken token) =>
+{
+    if (string.IsNullOrWhiteSpace(request.AmenityId) || string.IsNullOrWhiteSpace(request.ResidentId))
+    {
+        return Results.BadRequest(new { message = "Vui lòng chọn tiện ích và cư dân!" });
+    }
+
+    try
+    {
+        var bookingId = await repository.CreateBookingAsync(request, token);
+        return Results.Created($"/api/amenities/bookings/{bookingId}", new { bookingId, message = "Đặt lịch tiện ích thành công!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: 400, title: "Lỗi đặt lịch tiện ích");
+    }
+});
+
+app.MapPost("/api/amenities/bookings/{bookingId}/cancel", async (
+    string bookingId,
+    IAmenityRepository repository,
+    CancellationToken token) =>
+{
+    var success = await repository.CancelBookingAsync(bookingId, token);
+    return success
+        ? Results.Ok(new { message = "Hủy lịch đặt tiện ích thành công!" })
+        : Results.NotFound(new { message = "Không tìm thấy lịch đặt." });
 });
 
 

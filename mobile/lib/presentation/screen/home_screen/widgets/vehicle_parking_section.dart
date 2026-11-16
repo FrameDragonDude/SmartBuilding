@@ -1,29 +1,40 @@
 import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
+import '../../../../data/model/home_data_model.dart';
 
 class VehicleParkingSection extends StatelessWidget {
-  const VehicleParkingSection({super.key});
+  final List<VehicleHomeModel>? vehicles;
+
+  const VehicleParkingSection({super.key, this.vehicles});
 
   @override
   Widget build(BuildContext context) {
-    final vehicles = [
-      {
-        'name': 'Mercedes-Benz C200',
-        'plate': '51H-888.66',
-        'price': '1.500.000',
-        'slot': 'B1-B1-CAR-01',
-        'rfid': 'RFID-CAR-002',
-        'type': 'car',
-      },
-      {
-        'name': 'Honda SH 150i',
-        'plate': '59E1-123.45',
-        'price': '120.000',
-        'slot': 'B1-B1-MOTO-01',
-        'rfid': 'RFID-MB-001',
-        'type': 'bike',
-      },
-    ];
+    final list = vehicles != null && vehicles!.isNotEmpty
+        ? vehicles!
+        : [
+            VehicleHomeModel(
+              vehicleId: '1',
+              brand: 'Mercedes-Benz C200',
+              vehicleType: 'Car',
+              licensePlate: '51H-888.66',
+              rfidCardCode: 'RFID-CAR-002',
+              isActive: true,
+              slotCode: 'B1-B1-CAR-01',
+              basementLevel: 'Hầm B1',
+              monthlyPrice: 1500000,
+            ),
+            VehicleHomeModel(
+              vehicleId: '2',
+              brand: 'Honda SH 150i',
+              vehicleType: 'Motorbike',
+              licensePlate: '59E1-123.45',
+              rfidCardCode: 'RFID-MB-001',
+              isActive: true,
+              slotCode: 'B1-B1-MOTO-01',
+              basementLevel: 'Hầm B1',
+              monthlyPrice: 120000,
+            ),
+          ];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -53,12 +64,12 @@ class VehicleParkingSection extends StatelessWidget {
                   color: AppColors.lightBlueContainer,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Text("${vehicles.length} Phương tiện", style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                child: Text("${list.length} Phương tiện", style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          ...vehicles.map((v) => Container(
+          ...list.map((v) => Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -87,7 +98,7 @@ class VehicleParkingSection extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(
-                            v['type'] == 'car' ? Icons.directions_car_outlined : Icons.two_wheeler_outlined,
+                            v.vehicleType.toLowerCase() == 'car' ? Icons.directions_car_outlined : Icons.two_wheeler_outlined,
                             color: AppColors.secondary,
                             size: 24,
                           ),
@@ -96,7 +107,7 @@ class VehicleParkingSection extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(v['name']!, style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
+                            Text(v.brand, style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 4),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -104,7 +115,7 @@ class VehicleParkingSection extends StatelessWidget {
                                 color: AppColors.lightBlueContainer,
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Text(v['plate']!, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
+                              child: Text(v.licensePlate, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ),
@@ -113,7 +124,7 @@ class VehicleParkingSection extends StatelessWidget {
                     RichText(
                       text: TextSpan(
                         children: [
-                          TextSpan(text: v['price']!, style: const TextStyle(color: AppColors.secondary, fontSize: 16, fontWeight: FontWeight.bold)),
+                          TextSpan(text: v.monthlyPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.'), style: const TextStyle(color: AppColors.secondary, fontSize: 16, fontWeight: FontWeight.bold)),
                           const TextSpan(text: "đ", style: TextStyle(color: AppColors.secondary, fontSize: 15, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
                           const TextSpan(text: "/tháng", style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
                         ],
@@ -141,11 +152,11 @@ class VehicleParkingSection extends StatelessWidget {
                             children: [
                               const Icon(Icons.location_on_outlined, color: AppColors.secondary, size: 14),
                               const SizedBox(width: 2),
-                              Text(v['slot']!, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
+                              Text(v.slotCode, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const SizedBox(height: 2),
-                          const Text("Khu vực: Hầm B1", style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                          Text("Khu vực: ${v.basementLevel}", style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
                         ],
                       ),
                       Column(
@@ -155,7 +166,7 @@ class VehicleParkingSection extends StatelessWidget {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              Text(v['rfid']!, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
+                              Text(v.rfidCardCode, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
                               const SizedBox(width: 4),
                               Container(
                                 padding: const EdgeInsets.all(1),
@@ -168,7 +179,7 @@ class VehicleParkingSection extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 2),
-                          const Text("Đang hoạt động", style: TextStyle(color: AppColors.mintGreen, fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text(v.isActive ? "Đang hoạt động" : "Tạm ngưng", style: TextStyle(color: v.isActive ? AppColors.mintGreen : Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ],

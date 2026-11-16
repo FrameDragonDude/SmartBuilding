@@ -138,7 +138,6 @@ export default function App() {
           )}
         </main>
       </div>
-      {import.meta.env.DEV && <Agentation />}
     </div>
   )
 }
