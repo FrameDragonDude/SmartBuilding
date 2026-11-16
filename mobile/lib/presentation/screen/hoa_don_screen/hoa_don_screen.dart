@@ -805,8 +805,6 @@ class HoaDonScreen extends StatelessWidget {
                           Text(pay.transactionCode, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                           const SizedBox(height: 2),
                           Text('${pay.paymentMethod} • ${pay.paymentDate}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                          if (pay.payerNote != null && pay.payerNote!.isNotEmpty)
-                            Text('Ghi chú: ${pay.payerNote}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                         ],
                       ),
                     ),
@@ -896,18 +894,6 @@ class HoaDonScreen extends StatelessWidget {
           },
         ),
       ],
-    );
-  }
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            return const Center(child: CircularProgressIndicator());
-          },
-        ),
-      ),
     );
   }
 }
