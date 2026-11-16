@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../configs/theme/app_color.dart';
 import 'cubit/khieu_nai_cubit.dart';
 import 'cubit/khieu_nai_state.dart';
@@ -142,12 +143,51 @@ class KhieuNaiScreen extends StatelessWidget {
                             : null,
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
-                        controller: imageController,
-                        decoration: InputDecoration(
-                          labelText: 'URL hình ảnh đính kèm (tùy chọn)',
-                          hintText: 'https://...',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      InkWell(
+                        onTap: () async {
+                          try {
+                            final picker = ImagePicker();
+                            final img = await picker.pickImage(source: ImageSource.gallery);
+                            if (img != null) {
+                              setModalState(() {
+                                imageController.text = img.name;
+                              });
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Lỗi chọn ảnh: $e')),
+                            );
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.cardBorder),
+                            borderRadius: BorderRadius.circular(12),
+                            color: AppColors.lightSlateContainer,
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.add_photo_alternate_outlined, color: AppColors.secondary, size: 22),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  imageController.text.isNotEmpty
+                                      ? 'Ảnh đã chọn: ${imageController.text}'
+                                      : 'Đính kèm ảnh hiện trường (Bấm để chọn ảnh)',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: imageController.text.isNotEmpty ? FontWeight.bold : FontWeight.normal,
+                                    color: imageController.text.isNotEmpty ? AppColors.secondary : AppColors.textPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (imageController.text.isNotEmpty)
+                                const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),

@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../configs/theme/app_color.dart';
 
 class LegalDocItemData {
@@ -430,6 +432,8 @@ class _LegalDocumentsSectionState extends State<LegalDocumentsSection> {
     final docNumberController = TextEditingController();
     final placeController = TextEditingController();
     final noteController = TextEditingController();
+    String? pickedFileName;
+    Uint8List? pickedFileBytes;
 
     showModalBottomSheet(
       context: context,
@@ -523,36 +527,90 @@ class _LegalDocumentsSectionState extends State<LegalDocumentsSection> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.cardBorder, style: BorderStyle.solid),
-                          borderRadius: BorderRadius.circular(12),
-                          color: AppColors.lightSlateContainer,
-                        ),
-                        child: Row(
-                          children: const [
-                            Icon(Icons.cloud_upload_outlined, color: AppColors.secondary, size: 28),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Đính kèm ảnh chụp / Tệp PDF',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                  Text(
-                                    'Hỗ trợ JPG, PNG, PDF tối đa 15MB',
-                                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                                  ),
-                                ],
-                              ),
+
+                      // Image / File Picker Button
+                      InkWell(
+                        onTap: () async {
+                          try {
+                            final picker = ImagePicker();
+                            final image = await picker.pickImage(source: ImageSource.gallery);
+                            if (image != null) {
+                              final bytes = await image.readAsBytes();
+                              setModalState(() {
+                                pickedFileName = image.name;
+                                pickedFileBytes = bytes;
+                              });
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Lỗi chọn ảnh: $e')),
+                            );
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: pickedFileName != null ? AppColors.secondary : AppColors.cardBorder,
+                              width: pickedFileName != null ? 1.5 : 1.0,
                             ),
-                            Icon(Icons.check_circle, color: Colors.green, size: 20),
-                          ],
+                            borderRadius: BorderRadius.circular(12),
+                            color: pickedFileName != null ? AppColors.lightBlueContainer : AppColors.lightSlateContainer,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                pickedFileName != null ? Icons.image_rounded : Icons.cloud_upload_outlined,
+                                color: AppColors.secondary,
+                                size: 28,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      pickedFileName ?? 'Đính kèm ảnh chụp / Chọn từ thiết bị',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      pickedFileName != null
+                                          ? 'Đã chọn ảnh • Bấm để chọn lại'
+                                          : 'Bấm vào đây để chọn tệp từ máy tính / điện thoại',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: pickedFileName != null ? AppColors.secondary : AppColors.textSecondary,
+                                        fontWeight: pickedFileName != null ? FontWeight.w600 : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                pickedFileName != null ? Icons.check_circle_rounded : Icons.add_photo_alternate_outlined,
+                                color: pickedFileName != null ? Colors.green : AppColors.secondary,
+                                size: 22,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+
+                      if (pickedFileBytes != null) ...[
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.memory(
+                            pickedFileBytes!,
+                            height: 130,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ],
+
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: noteController,
