@@ -860,28 +860,28 @@ INSERT INTO AuditTrails (Id, AccountId, ActionType, TableName, RecordId, OldValu
 
 -- 23. AMENITY TIME SLOTS
 INSERT INTO AmenityTimeSlots (Id, AmenityId, SlotName, StartTime, EndTime, MaxCapacity, IsActive) VALUES 
-    ('Slot1', 'Am1', 'Ca sáng bơi tự do',     '06:00:00', '09:00:00', 30, 1),
-    ('Slot2', 'Am1', 'Ca chiều thư giãn',     '16:00:00', '19:00:00', 30, 1),
-    ('Slot3', 'Am1', 'Ca tối ngắm cảnh',      '19:00:00', '21:30:00', 25, 1),
-    ('Slot4', 'Am2', 'Tiệc BBQ trưa',         '11:00:00', '14:00:00', 20, 1),
-    ('Slot5', 'Am2', 'Tiệc BBQ tối gia đình', '17:30:00', '21:30:00', 20, 1),
-    ('Slot6', 'Am3', 'Gym & Yoga sáng sớm',   '05:30:00', '08:30:00', 25, 1),
-    ('Slot7', 'Am3', 'Gym & Fitness chiều',   '17:00:00', '20:30:00', 25, 1),
-    ('Slot8', 'Am4', 'Giao lưu Tennis sáng',  '06:00:00', '09:00:00', 8,  1),
-    ('Slot9', 'Am4', 'Trận đấu Tennis chiều', '16:00:00', '19:00:00', 8,  1);
+    ('Slot1', 'Amn3', 'Ca sáng bơi tự do',     '06:00:00', '09:00:00', 30, 1),
+    ('Slot2', 'Amn3', 'Ca chiều thư giãn',     '16:00:00', '19:00:00', 30, 1),
+    ('Slot3', 'Amn3', 'Ca tối ngắm cảnh',      '19:00:00', '21:30:00', 25, 1),
+    ('Slot4', 'Amn1', 'Tiệc BBQ trưa',         '11:00:00', '14:00:00', 20, 1),
+    ('Slot5', 'Amn1', 'Tiệc BBQ tối gia đình', '17:30:00', '21:30:00', 20, 1),
+    ('Slot6', 'Amn4', 'Gym & Yoga sáng sớm',   '05:30:00', '08:30:00', 25, 1),
+    ('Slot7', 'Amn4', 'Gym & Fitness chiều',   '17:00:00', '20:30:00', 25, 1),
+    ('Slot8', 'Amn2', 'Giao lưu Tennis sáng',  '06:00:00', '09:00:00', 8,  1),
+    ('Slot9', 'Amn2', 'Trận đấu Tennis chiều', '16:00:00', '19:00:00', 8,  1);
 
 -- 24. VEHICLE CARDS (THẺ TỪ RFID RA VÀO)
 INSERT INTO VehicleCards (Id, CardNumber, VehicleId, CardType, IssueDate, ExpiryDate, Status) VALUES 
-    ('Card1',  'RFID-CAR-0101',  'Veh1',  'Monthly', '2024-01-15', '2027-01-15', 'Active'),
-    ('Card2',  'RFID-MOTO-0102', 'Veh2',  'Monthly', '2024-01-15', '2027-01-15', 'Active'),
-    ('Card3',  'RFID-CAR-0201',  'Veh3',  'Monthly', '2024-02-10', '2027-02-10', 'Active'),
-    ('Card4',  'RFID-MOTO-0202', 'Veh4',  'Monthly', '2024-02-10', '2027-02-10', 'Active'),
-    ('Card5',  'RFID-CAR-0301',  'Veh5',  'Monthly', '2024-03-01', '2027-03-01', 'Active'),
-    ('Card6',  'RFID-MOTO-0302', 'Veh6',  'Monthly', '2024-03-01', '2027-03-01', 'Active'),
-    ('Card7',  'RFID-CAR-0401',  'Veh7',  'Monthly', '2024-04-12', '2027-04-12', 'Active'),
-    ('Card8',  'RFID-MOTO-0402', 'Veh8',  'Monthly', '2024-04-12', '2027-04-12', 'Active'),
-    ('Card9',  'RFID-CAR-0501',  'Veh9',  'Monthly', '2024-05-20', '2027-05-20', 'Active'),
-    ('Card10', 'RFID-MOTO-0502', 'Veh10', 'Monthly', '2024-05-20', '2027-05-20', 'Active');
+    ('Card1',  'RFID-MB-001',   'XM-079095001234-59E112345',  'Monthly', '2024-01-15', '2027-01-15', 'Active'),
+    ('Card2',  'RFID-CAR-002',  'OT-079095001234-51H88866',   'Monthly', '2024-01-15', '2027-01-15', 'Active'),
+    ('Card3',  'RFID-MB-003',   'XM-079198002345-59F298765',  'Monthly', '2024-02-10', '2027-02-10', 'Active'),
+    ('Card4',  'RFID-CAR-004',  'OT-079088003456-51K12399',   'Monthly', '2024-02-10', '2027-02-10', 'Active'),
+    ('Card5',  'RFID-CAR-005',  'OT-079092004567-51G77788',   'Monthly', '2024-03-01', '2027-03-01', 'Active'),
+    ('Card6',  'RFID-MB-006',   'XM-079196005678-59S355544',  'Monthly', '2024-03-01', '2027-03-01', 'Active'),
+    ('Card7',  'RFID-MB-007',   'XM-079099006789-59N144433',  'Monthly', '2024-04-12', '2027-04-12', 'Active'),
+    ('Card8',  'RFID-CAR-008',  'OT-079080004455-51A99911',   'Monthly', '2024-04-12', '2027-04-12', 'Active'),
+    ('Card9',  'RFID-MB-009',   'XM-079194006677-59X166677',  'Monthly', '2024-05-20', '2027-05-20', 'Active'),
+    ('Card10', 'RFID-EB-010',   'XEL-079091001122-59MD11122', 'Monthly', '2024-05-20', '2027-05-20', 'Active');
 
 -- 25. TEMPORARY ABSENCES (KHAI BÁO TẠM VẮNG)
 INSERT INTO TemporaryAbsences (Id, ResidentId, ApartmentId, StartDate, EndDate, Reason, ContactPhone, Status, ApprovedBy) VALUES 

@@ -184,40 +184,42 @@ public class HomeRepository : IHomeRepository
             }
         }
 
-        // 5. Latest Announcement
-        const string announcementSql = """
-            SELECT
-                Title,
-                Content
-            FROM ComplaintRequests
-            WHERE Status IN ('Pending', 'Processing', 'Assigned')
-            ORDER BY CreatedAt DESC
-            LIMIT 1;
-            """;
-
-        await using (var cmd = new MySqlCommand(announcementSql, connection))
+        // 5. Latest Announcement (from Notifications table)
+        try
         {
-            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            const string notiSql = """
+                SELECT
+                    Title,
+                    Content,
+                    DATE_FORMAT(PublishDate, '%d/%m/%Y') AS PublishDate
+                FROM Notifications
+                ORDER BY PublishDate DESC
+                LIMIT 1;
+                """;
+
+            await using var notiCmd = new MySqlCommand(notiSql, connection);
+            await using var reader = await notiCmd.ExecuteReaderAsync(cancellationToken);
             if (await reader.ReadAsync(cancellationToken))
             {
                 homeData.Announcement = new AnnouncementHomeDto
                 {
                     Title = reader.GetString("Title"),
-                    Date = "Hôm nay",
+                    Date = reader.GetString("PublishDate"),
                     Content = reader.GetString("Content"),
                     Hotline = "1900 8899"
                 };
             }
-            else
+        }
+        catch
+        {
+            // Fallback if Notifications table is not populated yet
+            homeData.Announcement = new AnnouncementHomeDto
             {
-                homeData.Announcement = new AnnouncementHomeDto
-                {
-                    Title = "Bảo trì thang máy Tháp Ruby",
-                    Date = "Hôm nay",
-                    Content = "Thang máy P1 & P2 tạm ngưng để kiểm định an toàn định kỳ từ 14:00 đến 17:00 ngày 10/09/2026. Quý cư dân vui lòng sử dụng thang hàng P3.",
-                    Hotline = "1900 8899"
-                };
-            }
+                Title = "Bảo trì thang máy Tháp Ruby",
+                Date = "Hôm nay",
+                Content = "Thang máy P1 & P2 tạm ngưng để kiểm định an toàn định kỳ từ 14:00 đến 17:00 ngày 10/09/2026. Quý cư dân vui lòng sử dụng thang hàng P3.",
+                Hotline = "1900 8899"
+            };
         }
 
         return homeData;

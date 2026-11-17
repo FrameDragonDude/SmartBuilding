@@ -109,7 +109,7 @@ export default function App() {
           </section>
 
           {active === 'dashboard' ? (
-            <Dashboard query={query} />
+            <Dashboard query={query} buildingId={selectedBuildingId} />
           ) : active === 'residents' ? (
             <ResidentsPage
               query={query}
