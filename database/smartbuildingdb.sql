@@ -290,6 +290,83 @@ CREATE TABLE AuditTrails (
     CONSTRAINT FK_AuditTrails_Accounts FOREIGN KEY (AccountId) REFERENCES Accounts(Id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+-- 6. PHÂN HỆ TIỆN ÍCH MỞ RỘNG, THẺ TỪ & LỊCH SỬ VẬN HÀNH (CHUẨN HÓA 3NF)
+
+CREATE TABLE AmenityTimeSlots (
+    Id VARCHAR(36) PRIMARY KEY,
+    AmenityId VARCHAR(36) NOT NULL,
+    SlotName VARCHAR(50) NOT NULL,
+    StartTime TIME NOT NULL,
+    EndTime TIME NOT NULL,
+    MaxCapacity INT NOT NULL DEFAULT 20 CHECK (MaxCapacity > 0),
+    IsActive TINYINT(1) NOT NULL DEFAULT 1,
+    CONSTRAINT FK_AmenityTimeSlots_Amenities FOREIGN KEY (AmenityId) REFERENCES Amenities(Id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE VehicleCards (
+    Id VARCHAR(36) PRIMARY KEY,
+    CardNumber VARCHAR(50) NOT NULL UNIQUE,
+    VehicleId VARCHAR(36) NOT NULL UNIQUE,
+    CardType ENUM('Monthly', 'Guest', 'VIP') NOT NULL DEFAULT 'Monthly',
+    IssueDate DATE NOT NULL,
+    ExpiryDate DATE NOT NULL,
+    Status ENUM('Active', 'Locked', 'Lost', 'Expired') NOT NULL DEFAULT 'Active',
+    CreatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT FK_VehicleCards_Vehicles FOREIGN KEY (VehicleId) REFERENCES Vehicles(Id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE TemporaryAbsences (
+    Id VARCHAR(36) PRIMARY KEY,
+    ResidentId CHAR(36) NOT NULL,
+    ApartmentId VARCHAR(36) NOT NULL,
+    StartDate DATE NOT NULL,
+    EndDate DATE NOT NULL,
+    Reason VARCHAR(255) NOT NULL,
+    ContactPhone VARCHAR(15) NULL,
+    Status ENUM('Pending', 'Approved', 'Rejected', 'Expired') NOT NULL DEFAULT 'Pending',
+    ApprovedBy VARCHAR(36) NULL,
+    CreatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT FK_TemporaryAbsences_Residents FOREIGN KEY (ResidentId) REFERENCES Residents(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_TemporaryAbsences_Apartments FOREIGN KEY (ApartmentId) REFERENCES Apartments(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_TemporaryAbsences_ApprovedBy FOREIGN KEY (ApprovedBy) REFERENCES Accounts(Id) ON DELETE SET NULL,
+    CONSTRAINT CHK_Absence_Dates CHECK (EndDate >= StartDate)
+) ENGINE=InnoDB;
+
+CREATE TABLE ComplaintAttachments (
+    Id VARCHAR(36) PRIMARY KEY,
+    ComplaintId VARCHAR(36) NOT NULL,
+    FileUrl VARCHAR(500) NOT NULL,
+    FileType ENUM('Image', 'Video', 'Document') NOT NULL DEFAULT 'Image',
+    UploadedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT FK_ComplaintAttachments_ComplaintRequests FOREIGN KEY (ComplaintId) REFERENCES ComplaintRequests(Id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE ComplaintLogs (
+    Id VARCHAR(36) PRIMARY KEY,
+    ComplaintId VARCHAR(36) NOT NULL,
+    StaffAccountId VARCHAR(36) NULL,
+    PreviousStatus ENUM('Pending', 'Assigned', 'Processing', 'Resolved', 'Closed') NULL,
+    NewStatus ENUM('Pending', 'Assigned', 'Processing', 'Resolved', 'Closed') NOT NULL,
+    Note TEXT NULL,
+    CreatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT FK_ComplaintLogs_ComplaintRequests FOREIGN KEY (ComplaintId) REFERENCES ComplaintRequests(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_ComplaintLogs_Accounts FOREIGN KEY (StaffAccountId) REFERENCES Accounts(Id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE Notifications (
+    Id VARCHAR(36) PRIMARY KEY,
+    BuildingId VARCHAR(36) NULL,
+    Title VARCHAR(150) NOT NULL,
+    Summary VARCHAR(300) NULL,
+    Content TEXT NOT NULL,
+    Category ENUM('General', 'Maintenance', 'FeeNotice', 'Emergency', 'Event') NOT NULL DEFAULT 'General',
+    Priority ENUM('Normal', 'High', 'Urgent') NOT NULL DEFAULT 'Normal',
+    PublishDate DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CreatedBy VARCHAR(36) NULL,
+    CONSTRAINT FK_Notifications_Buildings FOREIGN KEY (BuildingId) REFERENCES Buildings(Id) ON DELETE SET NULL,
+    CONSTRAINT FK_Notifications_Accounts FOREIGN KEY (CreatedBy) REFERENCES Accounts(Id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 -- INDEX TỐI ƯU TRUY VẤN
 CREATE INDEX IX_Apartments_FloorId ON Apartments(FloorId);
 CREATE INDEX IX_Apartments_Status ON Apartments(Status);
@@ -299,6 +376,13 @@ CREATE INDEX IX_UtilityUsages_BillingCycle ON UtilityUsages(BillingYear, Billing
 CREATE INDEX IX_MonthlyInvoices_Status ON MonthlyInvoices(Status);
 CREATE INDEX IX_MonthlyInvoices_DueDate ON MonthlyInvoices(DueDate, GracePeriodUntil);
 CREATE INDEX IX_ComplaintRequests_Status ON ComplaintRequests(Status);
+CREATE INDEX IX_VehicleCards_CardNumber ON VehicleCards(CardNumber);
+CREATE INDEX IX_TemporaryAbsences_ResidentId ON TemporaryAbsences(ResidentId);
+CREATE INDEX IX_TemporaryAbsences_Dates ON TemporaryAbsences(StartDate, EndDate);
+CREATE INDEX IX_ComplaintAttachments_ComplaintId ON ComplaintAttachments(ComplaintId);
+CREATE INDEX IX_ComplaintLogs_ComplaintId ON ComplaintLogs(ComplaintId);
+CREATE INDEX IX_Notifications_BuildingId ON Notifications(BuildingId);
+CREATE INDEX IX_Notifications_PublishDate ON Notifications(PublishDate);
 
 
 -- SEED DATA MẪU HOÀN CHỈNH
@@ -773,3 +857,59 @@ INSERT INTO AuditTrails (Id, AccountId, ActionType, TableName, RecordId, OldValu
     ('AT6', 'Acc9', 'INSERT', 'Payments',        'Inv2',      NULL, JSON_OBJECT('Method', 'MoMo', 'Amount', 2282000), '113.161.72.18'),
     ('AT7', 'Acc10','INSERT', 'ComplaintRequests','Res3',     NULL, JSON_OBJECT('Category', 'FacilityDamage', 'Title', 'Den chieu sang...'), '171.244.30.99'),
     ('AT8', 'Acc3', 'UPDATE', 'MonthlyInvoices', 'Inv4',      JSON_OBJECT('Status', 'Unpaid'), JSON_OBJECT('Status', 'Paid', 'PaidAmount', 3634000), '192.168.1.30');
+
+-- 23. AMENITY TIME SLOTS
+INSERT INTO AmenityTimeSlots (Id, AmenityId, SlotName, StartTime, EndTime, MaxCapacity, IsActive) VALUES 
+    ('Slot1', 'Am1', 'Ca sáng bơi tự do',     '06:00:00', '09:00:00', 30, 1),
+    ('Slot2', 'Am1', 'Ca chiều thư giãn',     '16:00:00', '19:00:00', 30, 1),
+    ('Slot3', 'Am1', 'Ca tối ngắm cảnh',      '19:00:00', '21:30:00', 25, 1),
+    ('Slot4', 'Am2', 'Tiệc BBQ trưa',         '11:00:00', '14:00:00', 20, 1),
+    ('Slot5', 'Am2', 'Tiệc BBQ tối gia đình', '17:30:00', '21:30:00', 20, 1),
+    ('Slot6', 'Am3', 'Gym & Yoga sáng sớm',   '05:30:00', '08:30:00', 25, 1),
+    ('Slot7', 'Am3', 'Gym & Fitness chiều',   '17:00:00', '20:30:00', 25, 1),
+    ('Slot8', 'Am4', 'Giao lưu Tennis sáng',  '06:00:00', '09:00:00', 8,  1),
+    ('Slot9', 'Am4', 'Trận đấu Tennis chiều', '16:00:00', '19:00:00', 8,  1);
+
+-- 24. VEHICLE CARDS (THẺ TỪ RFID RA VÀO)
+INSERT INTO VehicleCards (Id, CardNumber, VehicleId, CardType, IssueDate, ExpiryDate, Status) VALUES 
+    ('Card1',  'RFID-CAR-0101',  'Veh1',  'Monthly', '2024-01-15', '2027-01-15', 'Active'),
+    ('Card2',  'RFID-MOTO-0102', 'Veh2',  'Monthly', '2024-01-15', '2027-01-15', 'Active'),
+    ('Card3',  'RFID-CAR-0201',  'Veh3',  'Monthly', '2024-02-10', '2027-02-10', 'Active'),
+    ('Card4',  'RFID-MOTO-0202', 'Veh4',  'Monthly', '2024-02-10', '2027-02-10', 'Active'),
+    ('Card5',  'RFID-CAR-0301',  'Veh5',  'Monthly', '2024-03-01', '2027-03-01', 'Active'),
+    ('Card6',  'RFID-MOTO-0302', 'Veh6',  'Monthly', '2024-03-01', '2027-03-01', 'Active'),
+    ('Card7',  'RFID-CAR-0401',  'Veh7',  'Monthly', '2024-04-12', '2027-04-12', 'Active'),
+    ('Card8',  'RFID-MOTO-0402', 'Veh8',  'Monthly', '2024-04-12', '2027-04-12', 'Active'),
+    ('Card9',  'RFID-CAR-0501',  'Veh9',  'Monthly', '2024-05-20', '2027-05-20', 'Active'),
+    ('Card10', 'RFID-MOTO-0502', 'Veh10', 'Monthly', '2024-05-20', '2027-05-20', 'Active');
+
+-- 25. TEMPORARY ABSENCES (KHAI BÁO TẠM VẮNG)
+INSERT INTO TemporaryAbsences (Id, ResidentId, ApartmentId, StartDate, EndDate, Reason, ContactPhone, Status, ApprovedBy) VALUES 
+    ('Abs1', 'Res1', 'B1-F01-01', '2026-09-01', '2026-10-15', 'Đi công tác dài ngày tại Hà Nội', '0909500123', 'Approved', 'Acc2'),
+    ('Abs2', 'Res3', 'B1-F02-01', '2026-09-10', '2026-10-25', 'Về quê thăm gia đình và nghỉ dưỡng', '0922334455', 'Approved', 'Acc2'),
+    ('Abs3', 'Res5', 'B1-F02-03', '2026-10-01', '2026-11-15', 'Du học trao đổi ngắn hạn tại Singapore', '0944556677', 'Pending', NULL),
+    ('Abs4', 'Res7', 'B1-F03-02', '2026-11-20', '2027-01-05', 'Chữa bệnh nội trú tại nước ngoài', '0966778899', 'Pending', NULL);
+
+-- 26. COMPLAINT ATTACHMENTS (ẢNH MINH CHỨNG SỰ CỐ)
+INSERT INTO ComplaintAttachments (Id, ComplaintId, FileUrl, FileType) VALUES 
+    ('CA1', 'CR1', 'https://storage.bms.vn/complaints/cr1.jpg', 'Image'),
+    ('CA2', 'CR3', 'https://storage.bms.vn/complaints/cr3.jpg', 'Image'),
+    ('CA3', 'CR4', 'https://storage.bms.vn/complaints/res_cr4.jpg', 'Image'),
+    ('CA4', 'CR5', 'https://storage.bms.vn/complaints/cr5.jpg', 'Image'),
+    ('CA5', 'CR8', 'https://storage.bms.vn/complaints/res_cr8.jpg', 'Image');
+
+-- 27. COMPLAINT LOGS (NHẬT KÝ TIẾN ĐỘ XỬ LÝ)
+INSERT INTO ComplaintLogs (Id, ComplaintId, StaffAccountId, PreviousStatus, NewStatus, Note) VALUES 
+    ('CL1', 'CR2', 'Acc2', 'Pending',    'Assigned',   'Trưởng BQL đã tiếp nhận và chuyển cho đội An ninh kiểm tra'),
+    ('CL2', 'CR2', 'Acc5', 'Assigned',   'Processing', 'Đội an ninh đã lên nhắc nhở căn hộ tầng trên giữ trật tự sau 23h'),
+    ('CL3', 'CR3', 'Acc4', 'Pending',    'Assigned',   'Kỹ thuật viên đã tiếp nhận thông tin đèn hành lang tầng 2 nhấp nháy'),
+    ('CL4', 'CR4', 'Acc5', 'Processing', 'Resolved',   'Đã trích xuất camera an ninh và bàn giao dữ liệu cho cư dân'),
+    ('CL5', 'CR8', 'Acc5', 'Processing', 'Resolved',   'Đã lập biên bản bảo vệ trực sảnh và chấn chỉnh quy trình quẹt thẻ');
+
+-- 28. NOTIFICATIONS (THÔNG BÁO TÒA NHÀ)
+INSERT INTO Notifications (Id, BuildingId, Title, Summary, Content, Category, Priority, CreatedBy) VALUES 
+    ('Noti1', 'B1', 'Bảo trì định kỳ hệ thống thang máy Tòa Ruby', 'Thang máy Ruby P1 sẽ tạm ngưng từ 09:00 - 11:30 sáng thứ 5.', 'Ban Quản Lý thông báo tiến hành kiểm định và bảo dưỡng định kỳ hệ thống cáp thang máy P1 nhằm đảm bảo an toàn tuyệt đối.', 'Maintenance', 'High', 'Acc2'),
+    ('Noti2', NULL, 'Thông báo chốt số điện nước kỳ tháng 08/2026', 'Hóa đơn sinh hoạt kỳ tháng 8 đã được cập nhật trên ứng dụng.', 'Kính gửi toàn thể quý cư dân, chỉ số điện nước và cước phí quản lý tháng 8/2026 đã được phát hành. Kính mời quý cư dân thanh toán trước ngày 15/09/2026.', 'FeeNotice', 'Normal', 'Acc3'),
+    ('Noti3', 'B1', 'Kế hoạch phun thuốc diệt côn trùng khuôn viên', 'Phun thuốc muỗi các khu vực hành lang và tầng hầm ngày 20/09.', 'Để phòng chống dịch sốt xuất huyết, BQL sẽ phối hợp trung tâm y tế phun khử khuẩn khu vực công cộng từ 22:00 ngày 20/09/2026.', 'General', 'Normal', 'Acc7'),
+    ('Noti4', NULL, 'Thông báo diễn tập phòng cháy chữa cháy (PCCC)', 'Diễn tập thoát hiểm và sử dụng bình chữa cháy vào 08:30 Chủ nhật.', 'Nhằm nâng cao kỹ năng an toàn PCCC, BQL phối hợp cùng Cảnh sát PCCC tổ chức buổi diễn tập thực tế tại sân trung tâm. Kính mời cư dân tham gia.', 'Emergency', 'Urgent', 'Acc2'),
+    ('Noti5', 'B1', 'Vận hành thẻ xe RFID thông minh tại hầm B1-B2', 'Áp dụng quẹt thẻ tự động nhận diện biển số từ ngày 01/10/2026.', 'Hệ thống barrier tự động tích hợp nhận diện biển số và quẹt thẻ RFID đã hoàn thiện nâng cấp, giúp cư dân di chuyển nhanh chóng, chống ùn tắc.', 'General', 'Normal', 'Acc5');
