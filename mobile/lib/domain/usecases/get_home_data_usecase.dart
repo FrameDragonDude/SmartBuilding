@@ -6,7 +6,7 @@ class GetHomeDataUseCase {
 
   GetHomeDataUseCase(this.repository);
 
-  Future<HomeDataModel> execute({String residentId = 'Res1'}) {
+  Future<HomeDataModel> execute({String residentId = ''}) {
     return repository.getHomeData(residentId: residentId);
   }
 }

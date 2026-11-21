@@ -3,16 +3,20 @@ import '../../../../configs/theme/app_color.dart';
 
 class DatLichTabBar extends StatelessWidget {
   final int selectedIndex;
+  final String bookingCode;
   final ValueChanged<int> onTabSelected;
 
   const DatLichTabBar({
     super.key,
     required this.selectedIndex,
+    this.bookingCode = "#",
     required this.onTabSelected,
   });
 
   @override
   Widget build(BuildContext context) {
+    final codeDisplay = bookingCode.startsWith('#') ? bookingCode : '#$bookingCode';
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
@@ -21,7 +25,7 @@ class DatLichTabBar extends StatelessWidget {
           _buildTabChip(
             index: 0,
             icon: Icons.confirmation_number_outlined,
-            label: "Vé Tiện Ích #AB1",
+            label: "Vé Tiện Ích $codeDisplay",
           ),
           const SizedBox(width: 10),
           _buildTabChip(

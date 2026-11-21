@@ -120,9 +120,9 @@ public class AmenityRepository : IAmenityRepository
                 am.MaxCapacity,
                 COALESCE(b.Name, 'Tòa Ruby Suites') AS BuildingName,
                 COALESCE(ap.ApartmentNumber, 'RB-0101') AS ApartmentNumber,
-                COALESCE(ap.FloorNumber, 38) AS FloorNumber,
+                COALESCE(f.FloorNumber, 38) AS FloorNumber,
                 COALESCE(r.FullName, 'Nguyễn Văn An') AS ResidentName,
-                COALESCE(r.IdentityCard, '079095001234') AS IdCardNumber,
+                COALESCE(r.IdentityCardNumber, '079095001234') AS IdCardNumber,
                 DATE_FORMAT(ab.StartTime, '%d/%m/%Y') AS BookingDateRaw,
                 DATE_FORMAT(ab.StartTime, '%H:%i') AS StartTime,
                 DATE_FORMAT(ab.EndTime, '%H:%i') AS EndTime,
@@ -132,7 +132,8 @@ public class AmenityRepository : IAmenityRepository
             JOIN Amenities am ON am.Id = ab.AmenityId
             LEFT JOIN Residents r ON r.Id = ab.ResidentId
             LEFT JOIN Apartments ap ON ap.Id = ab.ApartmentId
-            LEFT JOIN Buildings b ON b.Id = ap.BuildingId
+            LEFT JOIN Floors f ON f.Id = ap.FloorId
+            LEFT JOIN Buildings b ON b.Id = f.BuildingId
             WHERE ab.Id = @BookingId
             LIMIT 1;
             """;
@@ -145,9 +146,9 @@ public class AmenityRepository : IAmenityRepository
         {
             var bId = GetStringSafe(reader, "BookingId");
             var buildingName = GetStringSafe(reader, "BuildingName", "Tòa Ruby Suites");
-            var apartmentNum = GetStringSafe(reader, "ApartmentNumber", "RB-0101");
-            var floorNum = GetIntSafe(reader, "FloorNumber", 38);
-            var dateRaw = GetStringSafe(reader, "BookingDateRaw", "12/09/2026");
+            var apartmentNum = GetStringSafe(reader, "ApartmentNumber");
+            var floorNum = GetIntSafe(reader, "FloorNumber");
+            var dateRaw = GetStringSafe(reader, "BookingDateRaw");
             var status = GetStringSafe(reader, "Status", "Confirmed");
 
             var amenityId = GetStringSafe(reader, "AmenityId");

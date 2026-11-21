@@ -53,6 +53,15 @@ app.MapGet("/api/residents/full-profile", async (
     return profile is null ? Results.NotFound(new { message = "Không tìm thấy hồ sơ cư dân" }) : Results.Ok(profile);
 });
 
+app.MapGet("/api/residents/{residentId}/profile", async (
+    string residentId,
+    IResidentRepository repository,
+    CancellationToken token) =>
+{
+    var profile = await repository.GetFullProfileAsync(residentId, token);
+    return profile is null ? Results.NotFound(new { message = $"Không tìm thấy hồ sơ cư dân {residentId}" }) : Results.Ok(profile);
+});
+
 app.MapGet("/api/residents/{apartmentId}/detail", async (
     string apartmentId,
     IResidentRepository repository,

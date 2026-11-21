@@ -94,7 +94,7 @@ class DatLichActions extends StatelessWidget {
                 ),
                 SizedBox(width: 8),
                 Text(
-                  'Hủy lịch đặt tiện ích BBQ này',
+                  'Hủy lịch đặt tiện ích này',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

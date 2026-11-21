@@ -6,7 +6,7 @@ class GetLatestBookingDetailUseCase {
 
   GetLatestBookingDetailUseCase(this.repository);
 
-  Future<AmenityBookingDetail> execute({String residentId = 'Res1'}) async {
+  Future<AmenityBookingDetail> execute({String residentId = ''}) async {
     return await repository.getLatestBookingDetail(residentId: residentId);
   }
 }

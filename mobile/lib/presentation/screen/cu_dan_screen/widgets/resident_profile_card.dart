@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
 
-class ResidentProfileCard extends StatelessWidget {
+class ResidentProfileCard extends StatefulWidget {
   final String name;
   final String roleText;
   final String residentId;
@@ -31,6 +31,34 @@ class ResidentProfileCard extends StatelessWidget {
   });
 
   @override
+  State<ResidentProfileCard> createState() => _ResidentProfileCardState();
+}
+
+class _ResidentProfileCardState extends State<ResidentProfileCard> {
+  bool _isExpanded = true;
+  bool _isSensitiveVisible = false;
+
+  String _maskValue(String raw, {int showPrefix = 3, int showSuffix = 3}) {
+    if (_isSensitiveVisible) return raw;
+    if (raw.contains('@')) {
+      final parts = raw.split('@');
+      final namePart = parts[0];
+      final domainPart = parts[1];
+      if (namePart.length <= 2) {
+        return '${namePart[0]}***@$domainPart';
+      }
+      return '${namePart.substring(0, 2)}***${namePart.substring(namePart.length - 1)}@$domainPart';
+    }
+    if (raw.length <= showPrefix + showSuffix) {
+      return '••••••••';
+    }
+    final prefix = raw.substring(0, showPrefix);
+    final suffix = raw.substring(raw.length - showSuffix);
+    final maskedLen = raw.length - showPrefix - showSuffix;
+    return '$prefix${'*' * maskedLen}$suffix';
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -49,17 +77,17 @@ class ResidentProfileCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Avatar + Name/Role + ID Pill
+          // Top Row: Avatar + Name/Role + ID Pill + Privacy/Expand Controls
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar with verified badge overlay
+              // Avatar
               Stack(
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
-                      avatarUrl,
+                      widget.avatarUrl,
                       width: 54,
                       height: 54,
                       fit: BoxFit.cover,
@@ -101,7 +129,7 @@ class ResidentProfileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name,
+                      widget.name,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -110,7 +138,7 @@ class ResidentProfileCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      roleText,
+                      widget.roleText,
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -121,89 +149,130 @@ class ResidentProfileCard extends StatelessWidget {
                 ),
               ),
 
-              // ID Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.lightSlateContainer,
-                  borderRadius: BorderRadius.circular(12),
+              // Controls: Privacy Eye Button + ID Badge + Chevron Toggle
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(
+                      _isSensitiveVisible ? Icons.visibility : Icons.visibility_off,
+                      color: AppColors.secondary,
+                      size: 20,
+                    ),
+                    tooltip: _isSensitiveVisible ? 'Ẩn thông tin nhạy cảm' : 'Hiển thị thông tin nhạy cảm',
+                    onPressed: () {
+                      setState(() {
+                        _isSensitiveVisible = !_isSensitiveVisible;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightSlateContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'ID: ${widget.residentId}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _isExpanded = !_isExpanded;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(2.0),
+                      child: Icon(
+                        _isExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
+                        color: AppColors.textSecondary,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          if (_isExpanded) ...[
+            const SizedBox(height: 10),
+
+            // Verification Badges Row
+            Row(
+              children: [
+                _buildBadge(
+                  icon: Icons.verified_user_outlined,
+                  label: 'Đã định danh CCCD',
+                  bgColor: AppColors.lightBlueContainer,
+                  textColor: AppColors.secondary,
                 ),
-                child: Text(
-                  'ID: $residentId',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textSecondary,
+                const SizedBox(width: 8),
+                _buildBadge(
+                  icon: Icons.lock_outline_rounded,
+                  label: 'JWT Auth',
+                  bgColor: AppColors.lightSlateContainer,
+                  textColor: AppColors.textSecondary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // 2 Info Cards Row (Apartment & CCCD)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildInfoCard(
+                    icon: Icons.location_on_outlined,
+                    label: 'Căn hộ & Diện tích',
+                    value: widget.apartmentInfo,
+                    subtext: widget.apartmentSubtext,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Verification Badges Row
-          Row(
-            children: [
-              _buildBadge(
-                icon: Icons.verified_user_outlined,
-                label: 'Đã định danh CCCD',
-                bgColor: AppColors.lightBlueContainer,
-                textColor: AppColors.secondary,
-              ),
-              const SizedBox(width: 8),
-              _buildBadge(
-                icon: Icons.lock_outline_rounded,
-                label: 'JWT Auth',
-                bgColor: AppColors.lightSlateContainer,
-                textColor: AppColors.textSecondary,
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // 2 Info Cards Row (Apartment & CCCD)
-          Row(
-            children: [
-              Expanded(
-                child: _buildInfoCard(
-                  icon: Icons.location_on_outlined,
-                  label: 'Căn hộ & Diện tích',
-                  value: apartmentInfo,
-                  subtext: apartmentSubtext,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildInfoCard(
+                    icon: Icons.badge_outlined,
+                    label: 'CCCD / CMND',
+                    value: _maskValue(widget.identityNumber),
+                    subtext: widget.identitySubtext,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildInfoCard(
-                  icon: Icons.badge_outlined,
-                  label: 'CCCD / CMND',
-                  value: identityNumber,
-                  subtext: identitySubtext,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
+              ],
+            ),
+            const SizedBox(height: 14),
 
-          // Contact Detail Rows
-          _buildContactRow(
-            icon: Icons.phone_outlined,
-            label: 'Số điện thoại',
-            value: phoneNumber,
-          ),
-          const SizedBox(height: 10),
-          _buildContactRow(
-            icon: Icons.email_outlined,
-            label: 'Hộp thư điện tử',
-            value: email,
-          ),
-          const SizedBox(height: 10),
-          _buildSecurityRow(
-            icon: Icons.key_outlined,
-            label: 'Tài khoản & Bảo mật',
-            username: username,
-            securityMethod: 'BCrypt Encrypted',
-          ),
+            // Contact Detail Rows
+            _buildContactRow(
+              icon: Icons.phone_outlined,
+              label: 'Số điện thoại',
+              value: _maskValue(widget.phoneNumber),
+            ),
+            const SizedBox(height: 10),
+            _buildContactRow(
+              icon: Icons.email_outlined,
+              label: 'Hộp thư điện tử',
+              value: _maskValue(widget.email),
+            ),
+            const SizedBox(height: 10),
+            _buildSecurityRow(
+              icon: Icons.key_outlined,
+              label: 'Tài khoản & Bảo mật',
+              username: widget.username,
+              securityMethod: 'BCrypt Encrypted',
+            ),
+          ],
         ],
       ),
     );

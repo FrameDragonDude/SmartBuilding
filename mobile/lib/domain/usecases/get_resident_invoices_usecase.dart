@@ -7,7 +7,7 @@ class GetResidentInvoicesUseCase {
   GetResidentInvoicesUseCase(this.repository);
 
   Future<ResidentInvoiceSummaryModel> execute({
-    String residentId = 'Res1',
+    String residentId = '',
     String? status,
     int? year,
   }) async {

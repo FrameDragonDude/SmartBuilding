@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
 
-class SecurityAuthorizationCard extends StatelessWidget {
+class SecurityAuthorizationCard extends StatefulWidget {
   const SecurityAuthorizationCard({super.key});
+
+  @override
+  State<SecurityAuthorizationCard> createState() => _SecurityAuthorizationCardState();
+}
+
+class _SecurityAuthorizationCardState extends State<SecurityAuthorizationCard> {
+  bool _isExpanded = true;
 
   @override
   Widget build(BuildContext context) {
@@ -23,45 +30,62 @@ class SecurityAuthorizationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
-          Row(
-            children: const [
-              Icon(
-                Icons.shield_outlined,
-                color: AppColors.secondary,
-                size: 20,
-              ),
-              SizedBox(width: 8),
-              Text(
-                'Xác thực & Ủy quyền Cơ sở Dữ liệu',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+          // Header Row (Clickable)
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.shield_outlined,
+                  color: AppColors.secondary,
+                  size: 20,
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                const Text(
+                  'Xác thực & Ủy quyền Cơ sở Dữ liệu',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  _isExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
+                  color: AppColors.textSecondary,
+                  size: 24,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          const Divider(color: AppColors.cardDivider, height: 1),
-          const SizedBox(height: 12),
 
-          // Detail Rows
-          _buildInfoRow(
-            label: 'Cụm dữ liệu phân quyền:',
-            value: 'Residents, ApartmentHistories',
-          ),
-          const SizedBox(height: 8),
-          _buildInfoRow(
-            label: 'Cụm dịch vụ bãi xe:',
-            value: 'Vehicles, ParkingSlots',
-          ),
-          const SizedBox(height: 8),
-          _buildInfoRow(
-            label: 'Cơ chế bảo mật mã hóa:',
-            value: 'HMAC-SHA256 (JWT) & Salt BCrypt',
-            valueColor: AppColors.secondary,
-          ),
+          if (_isExpanded) ...[
+            const SizedBox(height: 12),
+            const Divider(color: AppColors.cardDivider, height: 1),
+            const SizedBox(height: 12),
+
+            // Detail Rows
+            _buildInfoRow(
+              label: 'Cụm dữ liệu phân quyền:',
+              value: 'Residents, ApartmentHistories',
+            ),
+            const SizedBox(height: 8),
+            _buildInfoRow(
+              label: 'Cụm dịch vụ bãi xe:',
+              value: 'Vehicles, ParkingSlots',
+            ),
+            const SizedBox(height: 8),
+            _buildInfoRow(
+              label: 'Cơ chế bảo mật mã hóa:',
+              value: 'HMAC-SHA256 (JWT) & Salt BCrypt',
+              valueColor: AppColors.secondary,
+            ),
+          ],
         ],
       ),
     );
