@@ -290,6 +290,83 @@ CREATE TABLE AuditTrails (
     CONSTRAINT FK_AuditTrails_Accounts FOREIGN KEY (AccountId) REFERENCES Accounts(Id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+-- 6. PHÂN HỆ TIỆN ÍCH MỞ RỘNG, THẺ TỪ & LỊCH SỬ VẬN HÀNH (CHUẨN HÓA 3NF)
+
+CREATE TABLE AmenityTimeSlots (
+    Id VARCHAR(36) PRIMARY KEY,
+    AmenityId VARCHAR(36) NOT NULL,
+    SlotName VARCHAR(50) NOT NULL,
+    StartTime TIME NOT NULL,
+    EndTime TIME NOT NULL,
+    MaxCapacity INT NOT NULL DEFAULT 20 CHECK (MaxCapacity > 0),
+    IsActive TINYINT(1) NOT NULL DEFAULT 1,
+    CONSTRAINT FK_AmenityTimeSlots_Amenities FOREIGN KEY (AmenityId) REFERENCES Amenities(Id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE VehicleCards (
+    Id VARCHAR(36) PRIMARY KEY,
+    CardNumber VARCHAR(50) NOT NULL UNIQUE,
+    VehicleId VARCHAR(36) NOT NULL UNIQUE,
+    CardType ENUM('Monthly', 'Guest', 'VIP') NOT NULL DEFAULT 'Monthly',
+    IssueDate DATE NOT NULL,
+    ExpiryDate DATE NOT NULL,
+    Status ENUM('Active', 'Locked', 'Lost', 'Expired') NOT NULL DEFAULT 'Active',
+    CreatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT FK_VehicleCards_Vehicles FOREIGN KEY (VehicleId) REFERENCES Vehicles(Id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE TemporaryAbsences (
+    Id VARCHAR(36) PRIMARY KEY,
+    ResidentId CHAR(36) NOT NULL,
+    ApartmentId VARCHAR(36) NOT NULL,
+    StartDate DATE NOT NULL,
+    EndDate DATE NOT NULL,
+    Reason VARCHAR(255) NOT NULL,
+    ContactPhone VARCHAR(15) NULL,
+    Status ENUM('Pending', 'Approved', 'Rejected', 'Expired') NOT NULL DEFAULT 'Pending',
+    ApprovedBy VARCHAR(36) NULL,
+    CreatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT FK_TemporaryAbsences_Residents FOREIGN KEY (ResidentId) REFERENCES Residents(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_TemporaryAbsences_Apartments FOREIGN KEY (ApartmentId) REFERENCES Apartments(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_TemporaryAbsences_ApprovedBy FOREIGN KEY (ApprovedBy) REFERENCES Accounts(Id) ON DELETE SET NULL,
+    CONSTRAINT CHK_Absence_Dates CHECK (EndDate >= StartDate)
+) ENGINE=InnoDB;
+
+CREATE TABLE ComplaintAttachments (
+    Id VARCHAR(36) PRIMARY KEY,
+    ComplaintId VARCHAR(36) NOT NULL,
+    FileUrl VARCHAR(500) NOT NULL,
+    FileType ENUM('Image', 'Video', 'Document') NOT NULL DEFAULT 'Image',
+    UploadedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT FK_ComplaintAttachments_ComplaintRequests FOREIGN KEY (ComplaintId) REFERENCES ComplaintRequests(Id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE ComplaintLogs (
+    Id VARCHAR(36) PRIMARY KEY,
+    ComplaintId VARCHAR(36) NOT NULL,
+    StaffAccountId VARCHAR(36) NULL,
+    PreviousStatus ENUM('Pending', 'Assigned', 'Processing', 'Resolved', 'Closed') NULL,
+    NewStatus ENUM('Pending', 'Assigned', 'Processing', 'Resolved', 'Closed') NOT NULL,
+    Note TEXT NULL,
+    CreatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT FK_ComplaintLogs_ComplaintRequests FOREIGN KEY (ComplaintId) REFERENCES ComplaintRequests(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_ComplaintLogs_Accounts FOREIGN KEY (StaffAccountId) REFERENCES Accounts(Id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE Notifications (
+    Id VARCHAR(36) PRIMARY KEY,
+    BuildingId VARCHAR(36) NULL,
+    Title VARCHAR(150) NOT NULL,
+    Summary VARCHAR(300) NULL,
+    Content TEXT NOT NULL,
+    Category ENUM('General', 'Maintenance', 'FeeNotice', 'Emergency', 'Event') NOT NULL DEFAULT 'General',
+    Priority ENUM('Normal', 'High', 'Urgent') NOT NULL DEFAULT 'Normal',
+    PublishDate DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CreatedBy VARCHAR(36) NULL,
+    CONSTRAINT FK_Notifications_Buildings FOREIGN KEY (BuildingId) REFERENCES Buildings(Id) ON DELETE SET NULL,
+    CONSTRAINT FK_Notifications_Accounts FOREIGN KEY (CreatedBy) REFERENCES Accounts(Id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 -- INDEX TỐI ƯU TRUY VẤN
 CREATE INDEX IX_Apartments_FloorId ON Apartments(FloorId);
 CREATE INDEX IX_Apartments_Status ON Apartments(Status);
@@ -299,12 +376,19 @@ CREATE INDEX IX_UtilityUsages_BillingCycle ON UtilityUsages(BillingYear, Billing
 CREATE INDEX IX_MonthlyInvoices_Status ON MonthlyInvoices(Status);
 CREATE INDEX IX_MonthlyInvoices_DueDate ON MonthlyInvoices(DueDate, GracePeriodUntil);
 CREATE INDEX IX_ComplaintRequests_Status ON ComplaintRequests(Status);
+CREATE INDEX IX_VehicleCards_CardNumber ON VehicleCards(CardNumber);
+CREATE INDEX IX_TemporaryAbsences_ResidentId ON TemporaryAbsences(ResidentId);
+CREATE INDEX IX_TemporaryAbsences_Dates ON TemporaryAbsences(StartDate, EndDate);
+CREATE INDEX IX_ComplaintAttachments_ComplaintId ON ComplaintAttachments(ComplaintId);
+CREATE INDEX IX_ComplaintLogs_ComplaintId ON ComplaintLogs(ComplaintId);
+CREATE INDEX IX_Notifications_BuildingId ON Notifications(BuildingId);
+CREATE INDEX IX_Notifications_PublishDate ON Notifications(PublishDate);
 
 
 -- SEED DATA MẪU HOÀN CHỈNH
 
 -- 1. BUILDINGS
-INSERT INTO Buildings (Id, BuildingCode, Name, TotalFloors, TotalBasements, Address) VALUES 
+INSERT INTO Buildings (Id, BuildingCode, Name, TotalFloors, TotalBasements, Address) VALUES
     ('B1', 'RUBY-01', N'Tòa Ruby Suites', 25, 2, N'01 Mai Chí Thọ, Phường An Phú, TP. Thủ Đức'),
     ('B2', 'AQUA-02', N'Tòa Aqua Premier', 30, 3, N'02 Mai Chí Thọ, Phường An Phú, TP. Thủ Đức'),
     ('B3', 'EMERALD-03', N'Tòa Emerald Park', 28, 2, N'03 Mai Chí Thọ, Phường An Phú, TP. Thủ Đức'),
@@ -315,7 +399,7 @@ INSERT INTO Buildings (Id, BuildingCode, Name, TotalFloors, TotalBasements, Addr
     ('B8', 'PEARL-08', N'Tòa Pearl Plaza', 32, 3, N'08 Mai Chí Thọ, Phường An Phú, TP. Thủ Đức');
 
 -- 2. FLOORS
-INSERT INTO Floors (Id, BuildingId, FloorNumber, TotalApartments, Description) VALUES 
+INSERT INTO Floors (Id, BuildingId, FloorNumber, TotalApartments, Description) VALUES
     ('B1-F01', 'B1', 1, 3, N'Tòa Ruby - Tầng 1 (Khu căn hộ sân vườn)'),
     ('B1-F02', 'B1', 2, 3, N'Tòa Ruby - Tầng 2 (Khu căn hộ tiêu chuẩn)'),
     ('B1-F03', 'B1', 3, 2, N'Tòa Ruby - Tầng 3 (Khu căn hộ tiêu chuẩn)'),
@@ -353,7 +437,7 @@ INSERT INTO Floors (Id, BuildingId, FloorNumber, TotalApartments, Description) V
     ('B8-F05', 'B8', 5, 3, N'Tòa Pearl - Tầng 5 (Khu Penthouse Pearl)');
 
 -- 3. APARTMENTS
-INSERT INTO Apartments (Id, FloorId, ApartmentNumber, Area, RoomsCount, BathroomsCount, Status, Version) VALUES 
+INSERT INTO Apartments (Id, FloorId, ApartmentNumber, Area, RoomsCount, BathroomsCount, Status, Version) VALUES
     -- Tòa B1 (Ruby Suites - 14 căn)
     ('B1-F01-01', 'B1-F01', 'RB-0101', 95.00,  3, 2, 'Occupied', 1),
     ('B1-F01-02', 'B1-F01', 'RB-0102', 85.00,  2, 2, 'Occupied', 1),
@@ -475,7 +559,7 @@ INSERT INTO Apartments (Id, FloorId, ApartmentNumber, Area, RoomsCount, Bathroom
     ('B8-F05-03', 'B8-F05', 'PL-0503', 100.00, 3, 2, 'Occupied', 1);
 
 -- 4. RESIDENTS
-INSERT INTO Residents (Id, FullName, IdentityCardNumber, PhoneNumber, Email, DateOfBirth, Gender, AvatarUrl) VALUES 
+INSERT INTO Residents (Id, FullName, IdentityCardNumber, PhoneNumber, Email, DateOfBirth, Gender, AvatarUrl) VALUES
     ('Res1',  N'Nguyễn Văn An',    '079095001234', '0901234567', 'an.nguyen@gmail.com',    '1985-05-12', 'Nam', 'https://storage.bms.vn/avatars/res1.jpg'),
     ('Res2',  N'Trần Thị Bình',    '079198002345', '0912345678', 'binh.tran@gmail.com',    '1990-08-20', 'Nữ',  'https://storage.bms.vn/avatars/res2.jpg'),
     ('Res3',  N'Lê Hoàng Cường',   '079088003456', '0923456789', 'cuong.le@outlook.com',   '1988-11-03', 'Nam', 'https://storage.bms.vn/avatars/res3.jpg'),
@@ -494,7 +578,7 @@ INSERT INTO Residents (Id, FullName, IdentityCardNumber, PhoneNumber, Email, Dat
     ('Res16', N'Dương Thu Hà',     '079195008899', '0918899001', 'ha.duong@gmail.com',     '1998-11-11', 'Nữ',  'https://storage.bms.vn/avatars/res16.jpg');
 
 -- 5. APARTMENT HISTORIES
-INSERT INTO ApartmentHistories (Id, ApartmentId, ResidentId, ContractType, StartDate, EndDate, ContractFileUrl, IsCurrent) VALUES 
+INSERT INTO ApartmentHistories (Id, ApartmentId, ResidentId, ContractType, StartDate, EndDate, ContractFileUrl, IsCurrent) VALUES
     ('AH1',  'B1-F01-01', 'Res1',  'Tenant', '2024-01-01', '2027-01-01', 'https://storage.bms.vn/contracts/c1.pdf',  1),
     ('AH2',  'B1-F01-02', 'Res2',  'Owner',  '2023-05-15', NULL,         'https://storage.bms.vn/contracts/c2.pdf',  1),
     ('AH3',  'B1-F02-01', 'Res3',  'Owner',  '2023-08-01', NULL,         'https://storage.bms.vn/contracts/c3.pdf',  1),
@@ -513,7 +597,7 @@ INSERT INTO ApartmentHistories (Id, ApartmentId, ResidentId, ContractType, Start
     ('AH16', 'B1-F02-02', 'Res16', 'Tenant', '2022-01-01', '2023-12-31', 'https://storage.bms.vn/contracts/c16.pdf', 0);
 
 -- 6. RESIDENT DOCUMENTS
-INSERT INTO ResidentDocuments (Id, ResidentId, DocumentType, DocumentNumber, IssuedDate, IssuedPlace, AttachmentUrl, VerificationStatus) VALUES 
+INSERT INTO ResidentDocuments (Id, ResidentId, DocumentType, DocumentNumber, IssuedDate, IssuedPlace, AttachmentUrl, VerificationStatus) VALUES
     ('Doc1',  'Res1',  'CCCD_Front', '079095001234', '2021-06-10', N'Cục CSQLHC về TTXH', 'https://storage.bms.vn/docs/cccd_01_f.jpg', 'Approved'),
     ('Doc2',  'Res1',  'CCCD_Back',  '079095001234', '2021-06-10', N'Cục CSQLHC về TTXH', 'https://storage.bms.vn/docs/cccd_01_b.jpg', 'Approved'),
     ('Doc3',  'Res2',  'GiayKetHon', 'GKH-882910',   '2023-04-12', N'UBND Phường An Phú', 'https://storage.bms.vn/docs/gkh_02.jpg',    'Approved'),
@@ -532,7 +616,7 @@ INSERT INTO ResidentDocuments (Id, ResidentId, DocumentType, DocumentNumber, Iss
     ('Doc16', 'Res15', 'TamVang',    'TV-2021-01',   '2021-02-01', N'Công an Tỉnh Đồng Nai', 'https://storage.bms.vn/docs/tamvang_15.jpg', 'Approved');
 
 -- 7. VEHICLES
-INSERT INTO Vehicles (Id, ResidentId, ApartmentId, VehicleType, LicensePlate, RfidCardCode, Brand, RegistrationPaperUrl, VehicleImageUrl, IsActive) VALUES 
+INSERT INTO Vehicles (Id, ResidentId, ApartmentId, VehicleType, LicensePlate, RfidCardCode, Brand, RegistrationPaperUrl, VehicleImageUrl, IsActive) VALUES
     ('XM-079095001234-59E112345', 'Res1',  'B1-F01-01', 'Motorbike',       '59E1-123.45', 'RFID-MB-001',  'Honda SH 150i',     'https://storage.bms.vn/cavet/xm01.jpg', 'https://storage.bms.vn/vehicles/xm01.jpg', 1),
     ('OT-079095001234-51H88866',  'Res1',  'B1-F01-01', 'Car',             '51H-888.66',  'RFID-CAR-002', 'Mercedes-Benz C200', 'https://storage.bms.vn/cavet/ot01.jpg', 'https://storage.bms.vn/vehicles/ot01.jpg', 1),
     ('XM-079198002345-59F298765', 'Res2',  'B1-F01-02', 'Motorbike',       '59F2-987.65', 'RFID-MB-003',  'Yamaha Grande',     'https://storage.bms.vn/cavet/xm02.jpg', 'https://storage.bms.vn/vehicles/xm02.jpg', 1),
@@ -551,7 +635,7 @@ INSERT INTO Vehicles (Id, ResidentId, ApartmentId, VehicleType, LicensePlate, Rf
     ('XEL-079092004567-59MD99900','Res4',  'B1-F02-02', 'ElectricBicycle', '59MD-999.00', 'RFID-EB-016',  'Yadea G5',           'https://storage.bms.vn/cavet/xel02.jpg','https://storage.bms.vn/vehicles/xel02.jpg',1);
 
 -- 8. PARKING SLOTS (Đã có BuildingId, chuẩn tòa hầm và khớp 100% Vehicles.Id)
-INSERT INTO ParkingSlots (Id, BuildingId, VehicleId, SlotCode, BasementLevel, SlotType, IsOccupied) VALUES 
+INSERT INTO ParkingSlots (Id, BuildingId, VehicleId, SlotCode, BasementLevel, SlotType, IsOccupied) VALUES
     -- TẦNG HẦM TÒA B1 (Ruby Suites)
     ('Lot1',  'B1', 'XM-079095001234-59E112345',  'B1-B1-MOTO-01', 'B1', 'Motorbike', 1),
     ('Lot2',  'B1', 'OT-079095001234-51H88866',   'B1-B1-CAR-01',  'B1', 'Car',       1),
@@ -574,7 +658,7 @@ INSERT INTO ParkingSlots (Id, BuildingId, VehicleId, SlotCode, BasementLevel, Sl
     ('Lot17', 'B3', NULL,                         'B3-B1-CAR-01',  'B1', 'Car',       0);
 
 -- 9. SERVICE TARIFFS
-INSERT INTO ServiceTariffs (Id, ServiceType, TierName, FromUnit, ToUnit, UnitPrice, VatRate, EffectiveDate) VALUES 
+INSERT INTO ServiceTariffs (Id, ServiceType, TierName, FromUnit, ToUnit, UnitPrice, VatRate, EffectiveDate) VALUES
     ('ST1', 'Electricity',        N'Điện bậc 1 (0-50 kWh)',       0.00,  50.00, 1806.00,    8.00,  '2026-01-01'),
     ('ST2', 'Electricity',        N'Điện bậc 2 (51-100 kWh)',     50.01, 100.00, 1866.00,   8.00,  '2026-01-01'),
     ('ST3', 'Electricity',        N'Điện bậc 3 (101-200 kWh)',    100.01,200.00, 2167.00,   8.00,  '2026-01-01'),
@@ -586,7 +670,7 @@ INSERT INTO ServiceTariffs (Id, ServiceType, TierName, FromUnit, ToUnit, UnitPri
     ('ST9', 'ParkingFee',         N'Phí gửi Xe đạp điện / tháng', 0.00,  NULL,   80000.00,  10.00, '2026-01-01');
 
 -- 10. UTILITY METERS
-INSERT INTO UtilityMeters (Id, ApartmentId, MeterType, MeterSerialNumber, InstallationDate, IsActive) VALUES 
+INSERT INTO UtilityMeters (Id, ApartmentId, MeterType, MeterSerialNumber, InstallationDate, IsActive) VALUES
     ('Mtr1',  'B1-F01-01', 'Electricity', 'EM-RB0101-01', '2023-12-01', 1),
     ('Mtr2',  'B1-F01-01', 'Water',       'WM-RB0101-01', '2023-12-01', 1),
     ('Mtr3',  'B1-F01-02', 'Electricity', 'EM-RB0102-01', '2023-04-10', 1),
@@ -605,7 +689,7 @@ INSERT INTO UtilityMeters (Id, ApartmentId, MeterType, MeterSerialNumber, Instal
     ('Mtr16', 'B1-F04-01', 'Water',       'WM-RB0401-01', '2024-04-10', 1);
 
 -- 11. UTILITY USAGES
-INSERT INTO UtilityUsages (Id, MeterId, BillingMonth, BillingYear, PreviousReading, CurrentReading, CalculatedAmount, ProofImageUrl) VALUES 
+INSERT INTO UtilityUsages (Id, MeterId, BillingMonth, BillingYear, PreviousReading, CurrentReading, CalculatedAmount, ProofImageUrl) VALUES
     ('UU1',  'Mtr1',  8, 2026, 420.00,  690.00,  585000.00,  'https://storage.bms.vn/meters/m1_0826.jpg'),
     ('UU2',  'Mtr2',  8, 2026, 35.00,   52.00,   185000.00,  'https://storage.bms.vn/meters/m2_0826.jpg'),
     ('UU3',  'Mtr3',  8, 2026, 310.00,  530.00,  468000.00,  'https://storage.bms.vn/meters/m3_0826.jpg'),
@@ -624,7 +708,7 @@ INSERT INTO UtilityUsages (Id, MeterId, BillingMonth, BillingYear, PreviousReadi
     ('UU16', 'Mtr16', 8, 2026, 40.00,   62.00,   220000.00,  'https://storage.bms.vn/meters/m16_0826.jpg');
 
 -- 12. AMENITIES
-INSERT INTO Amenities (Id, Name, ImageUrl, MaxCapacity, OpenTime, CloseTime, SlotDurationMinutes, IsActive) VALUES 
+INSERT INTO Amenities (Id, Name, ImageUrl, MaxCapacity, OpenTime, CloseTime, SlotDurationMinutes, IsActive) VALUES
     ('Amn1', N'Khu Vườn Nướng BBQ Tầng Thượng', 'https://storage.bms.vn/amenities/bbq.jpg',    20, '16:00:00', '22:00:00', 120, 1),
     ('Amn2', N'Sân Tennis Tiêu Chuẩn Quốc Tế',  'https://storage.bms.vn/amenities/tennis.jpg', 4,  '06:00:00', '22:00:00', 60,  1),
     ('Amn3', N'Hồ Bơi Vô Cực Khối Aqua',         'https://storage.bms.vn/amenities/pool.jpg',   50, '05:30:00', '21:00:00', 120, 1),
@@ -635,7 +719,7 @@ INSERT INTO Amenities (Id, Name, ImageUrl, MaxCapacity, OpenTime, CloseTime, Slo
     ('Amn8', N'Khu Vui Chơi Trẻ Em KidZone',     'https://storage.bms.vn/amenities/kid.jpg',    25, '08:00:00', '20:30:00', 120, 1);
 
 -- 13. AMENITY BOOKINGS
-INSERT INTO AmenityBookings (Id, AmenityId, ResidentId, ApartmentId, StartTime, EndTime, NumberOfGuests, Status) VALUES 
+INSERT INTO AmenityBookings (Id, AmenityId, ResidentId, ApartmentId, StartTime, EndTime, NumberOfGuests, Status) VALUES
     ('AB1', 'Amn1', 'Res1',  'B1-F01-01', '2026-09-12 18:00:00', '2026-09-12 20:00:00', 10, 'Confirmed'),
     ('AB2', 'Amn2', 'Res2',  'B1-F01-02', '2026-09-13 07:00:00', '2026-09-13 08:00:00', 2,  'Confirmed'),
     ('AB3', 'Amn1', 'Res3',  'B1-F02-01', '2026-09-14 18:30:00', '2026-09-14 20:30:00', 12, 'Confirmed'),
@@ -648,7 +732,7 @@ INSERT INTO AmenityBookings (Id, AmenityId, ResidentId, ApartmentId, StartTime, 
     ('AB10','Amn2', 'Res10', 'B1-F05-01', '2026-09-22 06:00:00', '2026-09-22 07:00:00', 2,  'Confirmed');
 
 -- 14. MONTHLY INVOICES
-INSERT INTO MonthlyInvoices (Id, ApartmentId, InvoiceCode, BillingMonth, BillingYear, TotalAmount, PaidAmount, DueDate, GracePeriodUntil, Status, ReminderSent, ReminderDate) VALUES 
+INSERT INTO MonthlyInvoices (Id, ApartmentId, InvoiceCode, BillingMonth, BillingYear, TotalAmount, PaidAmount, DueDate, GracePeriodUntil, Status, ReminderSent, ReminderDate) VALUES
     ('Inv1',  'B1-F01-01', 'INV-202608-RB0101', 8, 2026, 4100000.00, 4100000.00, '2026-09-15', '2026-09-20', 'Paid',          1, '2026-09-12 08:00:00'),
     ('Inv2',  'B1-F01-02', 'INV-202608-RB0102', 8, 2026, 2282000.00, 2282000.00, '2026-09-15', '2026-09-20', 'Paid',          1, '2026-09-12 08:00:00'),
     ('Inv3',  'B1-F01-03', 'INV-202608-RB0103', 8, 2026, 1350000.00, 0.00,       '2026-09-15', '2026-09-20', 'Unpaid',        1, '2026-09-12 08:00:00'),
@@ -667,7 +751,7 @@ INSERT INTO MonthlyInvoices (Id, ApartmentId, InvoiceCode, BillingMonth, Billing
     ('Inv16', 'B3-F01-02', 'INV-202608-EM0102', 8, 2026, 1696000.00, 1696000.00, '2026-09-15', '2026-09-20', 'Paid',          1, '2026-09-12 08:00:00');
 
 -- 15. INVOICE DETAILS
-INSERT INTO InvoiceDetails (Id, InvoiceId, ItemType, Description, Quantity, UnitPrice, LineTotal) VALUES 
+INSERT INTO InvoiceDetails (Id, InvoiceId, ItemType, Description, Quantity, UnitPrice, LineTotal) VALUES
     ('ID1',  'Inv1', 'ManagementFee', N'Phí quản lý căn hộ (95 m2)',      95.00,  18000.00,  1710000.00),
     ('ID2',  'Inv1', 'Electricity',   N'Điện sinh hoạt (270 kWh)',        270.00, 2166.67,   585000.00),
     ('ID3',  'Inv1', 'Water',         N'Nước sinh hoạt (17 m3)',          17.00,  10882.35,  185000.00),
@@ -680,7 +764,7 @@ INSERT INTO InvoiceDetails (Id, InvoiceId, ItemType, Description, Quantity, Unit
     ('ID10', 'Inv5', 'ParkingFee',    N'Phí đỗ ô tô 51G-777.88',          1.00,   1500000.00,1500000.00);
 
 -- 16. PAYMENTS
-INSERT INTO Payments (Id, InvoiceId, TransactionCode, PaymentMethod, Amount, ProofReceiptUrl, PaymentDate, Status, PayerNote) VALUES 
+INSERT INTO Payments (Id, InvoiceId, TransactionCode, PaymentMethod, Amount, ProofReceiptUrl, PaymentDate, Status, PayerNote) VALUES
     ('Pay1',  'Inv1',  'TXN_VNPAY_082026_001', 'VNPay',        4100000.00, NULL,                                       '2026-09-02 08:30:15', 'Success', N'Nguyen Van An thanh toan phi thang 8'),
     ('Pay2',  'Inv2',  'TXN_MOMO_082026_002',  'MoMo',         2282000.00, NULL,                                       '2026-09-03 14:15:20', 'Success', N'Tran Thi Binh thanh toan can ho RB-0102'),
     ('Pay3',  'Inv4',  'TXN_BANK_082026_003',  'BankTransfer', 3634000.00, 'https://storage.bms.vn/receipts/rec01.jpg', '2026-09-04 10:05:00', 'Success', N'Le Hoang Cuong chuyen khoan Techcombank'),
@@ -693,7 +777,7 @@ INSERT INTO Payments (Id, InvoiceId, TransactionCode, PaymentMethod, Amount, Pro
     ('Pay10', 'Inv14', 'TXN_BANK_082026_010',  'BankTransfer', 3420000.00, 'https://storage.bms.vn/receipts/rec03.jpg', '2026-09-08 17:00:00', 'Success', N'Ta Phuong Thao thanh toan chuyen khoan');
 
 -- 17. LATE PAYMENT PENALTIES
-INSERT INTO LatePaymentPenalties (Id, InvoiceId, OverdueDays, InterestRate, PenaltyAmount, Reason, IsResolved) VALUES 
+INSERT INTO LatePaymentPenalties (Id, InvoiceId, OverdueDays, InterestRate, PenaltyAmount, Reason, IsResolved) VALUES
     ('Pen1', 'Inv7',  26, 0.05, 35828.00, N'Quá hạn thanh toán 26 ngày kỳ 08/2026', 0),
     ('Pen2', 'Inv8',  26, 0.05, 54210.00, N'Quá hạn thanh toán 26 ngày kỳ 08/2026', 0),
     ('Pen3', 'Inv15', 26, 0.05, 28392.00, N'Quá hạn thanh toán 26 ngày kỳ 08/2026', 0),
@@ -704,7 +788,7 @@ INSERT INTO LatePaymentPenalties (Id, InvoiceId, OverdueDays, InterestRate, Pena
     ('Pen8', 'Inv1',  2,  0.05, 4100.00,  N'Chậm quyết toán ban đầu', 1);
 
 -- 18. COMPLAINT REQUESTS
-INSERT INTO ComplaintRequests (Id, ResidentId, ApartmentId, Category, Title, Content, AttachedImageUrl, ResolvedImageUrl, Status) VALUES 
+INSERT INTO ComplaintRequests (Id, ResidentId, ApartmentId, Category, Title, Content, AttachedImageUrl, ResolvedImageUrl, Status) VALUES
     ('CR1',  'Res1',  'B1-F01-01', 'Sanitation',     N'Hành lang tầng 1 có rác chưa thu gom',    N'Khu vực trước cửa căn hộ còn tồn ứ thùng carton từ tối qua.',   'https://storage.bms.vn/complaints/cr1.jpg',  NULL,                                       'Pending'),
     ('CR2',  'Res2',  'B1-F01-02', 'Noise',          N'Tiếng ồn từ căn hộ tầng trên ban đêm',    N'Căn hộ tầng trên thường xuyên mở nhạc lớn sau 23h.',             NULL,                                         NULL,                                       'Processing'),
     ('CR3',  'Res3',  'B1-F02-01', 'FacilityDamage', N'Đèn chiếu sáng sảnh tầng 2 bị nhấp nháy', N'Bóng đèn LED sảnh Ruby tầng 2 bị chớp tắt liên tục.',          'https://storage.bms.vn/complaints/cr3.jpg',  NULL,                                       'Assigned'),
@@ -717,7 +801,7 @@ INSERT INTO ComplaintRequests (Id, ResidentId, ApartmentId, Category, Title, Con
     ('CR10', 'Res10', 'B1-F05-01', 'Sanitation',     N'Khu tập kết rác tầng 5 bốc mùi',          N'Cần vệ sinh khử mùi phòng chứa rác tầng 5.',                     NULL,                                         NULL,                                       'Processing');
 
 -- 19. ACCOUNTS
-INSERT INTO Accounts (Id, ResidentId, Username, PasswordHash, Email, IsActive) VALUES 
+INSERT INTO Accounts (Id, ResidentId, Username, PasswordHash, Email, IsActive) VALUES
     ('Acc1',  NULL,    'superadmin',     '$2a$11$Z8eEw.x7V0pP9Y0s8Z7aCe7.zX9Y0w1W2e3R4t5Y6u7I8o9P0a1B2', 'superadmin@smartbuilding.vn', 1),
     ('Acc2',  NULL,    'bql.manager01',  '$2a$11$Z8eEw.x7V0pP9Y0s8Z7aCe7.zX9Y0w1W2e3R4t5Y6u7I8o9P0a1B2', 'manager@smartbuilding.vn',      1),
     ('Acc3',  NULL,    'ketoan.trang',   '$2a$11$Z8eEw.x7V0pP9Y0s8Z7aCe7.zX9Y0w1W2e3R4t5Y6u7I8o9P0a1B2', 'trang.ketoan@smartbuilding.vn',1),
@@ -735,7 +819,7 @@ INSERT INTO Accounts (Id, ResidentId, Username, PasswordHash, Email, IsActive) V
     ('Acc15', 'Res8',  'buithimai',      '$2a$11$Z8eEw.x7V0pP9Y0s8Z7aCe7.zX9Y0w1W2e3R4t5Y6u7I8o9P0a1B2', 'mai.bui@gmail.com',            1);
 
 -- 20. ROLES
-INSERT INTO Roles (Id, RoleCode, RoleName, Description) VALUES 
+INSERT INTO Roles (Id, RoleCode, RoleName, Description) VALUES
     ('R1', 'SuperAdmin',      N'Quản trị viên cấp cao',  N'Toàn quyền cấu hình hệ thống, cơ sở dữ liệu và bảo mật'),
     ('R2', 'BuildingManager', N'Trưởng Ban Quản Lý',    N'Quản lý điều hành vận hành tòa nhà, duyệt đơn từ cư dân'),
     ('R3', 'Accountant',      N'Kế toán trưởng',         N'Quản lý hóa đơn, thu tiền, đối soát và tính phạt trễ hạn'),
@@ -746,7 +830,7 @@ INSERT INTO Roles (Id, RoleCode, RoleName, Description) VALUES
     ('R8', 'Resident',        N'Cư dân chính thức',      N'Truy cập ứng dụng cư dân, thanh toán và gửi yêu cầu');
 
 -- 21. USER ROLES
-INSERT INTO UserRoles (AccountId, RoleId) VALUES 
+INSERT INTO UserRoles (AccountId, RoleId) VALUES
     ('Acc1',  'R1'),
     ('Acc2',  'R2'),
     ('Acc3',  'R3'),
@@ -764,7 +848,7 @@ INSERT INTO UserRoles (AccountId, RoleId) VALUES
     ('Acc15', 'R8');
 
 -- 22. AUDIT TRAILS
-INSERT INTO AuditTrails (Id, AccountId, ActionType, TableName, RecordId, OldValues, NewValues, IpAddress) VALUES 
+INSERT INTO AuditTrails (Id, AccountId, ActionType, TableName, RecordId, OldValues, NewValues, IpAddress) VALUES
     ('AT1', 'Acc1', 'INSERT', 'Buildings',       'B1',        NULL, JSON_OBJECT('BuildingCode', 'RUBY-01', 'Name', 'Ruby Suites'), '192.168.1.10'),
     ('AT2', 'Acc2', 'UPDATE', 'Apartments',      'B1-F01-03', JSON_OBJECT('Status', 'Occupied'), JSON_OBJECT('Status', 'Available'), '192.168.1.25'),
     ('AT3', 'Acc3', 'INSERT', 'MonthlyInvoices', 'Inv1',      NULL, JSON_OBJECT('InvoiceCode', 'INV-202608-RB0101', 'TotalAmount', 4100000), '192.168.1.30'),
@@ -773,3 +857,59 @@ INSERT INTO AuditTrails (Id, AccountId, ActionType, TableName, RecordId, OldValu
     ('AT6', 'Acc9', 'INSERT', 'Payments',        'Inv2',      NULL, JSON_OBJECT('Method', 'MoMo', 'Amount', 2282000), '113.161.72.18'),
     ('AT7', 'Acc10','INSERT', 'ComplaintRequests','Res3',     NULL, JSON_OBJECT('Category', 'FacilityDamage', 'Title', 'Den chieu sang...'), '171.244.30.99'),
     ('AT8', 'Acc3', 'UPDATE', 'MonthlyInvoices', 'Inv4',      JSON_OBJECT('Status', 'Unpaid'), JSON_OBJECT('Status', 'Paid', 'PaidAmount', 3634000), '192.168.1.30');
+
+-- 23. AMENITY TIME SLOTS
+INSERT INTO AmenityTimeSlots (Id, AmenityId, SlotName, StartTime, EndTime, MaxCapacity, IsActive) VALUES
+    ('Slot1', 'Amn3', 'Ca sáng bơi tự do',     '06:00:00', '09:00:00', 30, 1),
+    ('Slot2', 'Amn3', 'Ca chiều thư giãn',     '16:00:00', '19:00:00', 30, 1),
+    ('Slot3', 'Amn3', 'Ca tối ngắm cảnh',      '19:00:00', '21:30:00', 25, 1),
+    ('Slot4', 'Amn1', 'Tiệc BBQ trưa',         '11:00:00', '14:00:00', 20, 1),
+    ('Slot5', 'Amn1', 'Tiệc BBQ tối gia đình', '17:30:00', '21:30:00', 20, 1),
+    ('Slot6', 'Amn4', 'Gym & Yoga sáng sớm',   '05:30:00', '08:30:00', 25, 1),
+    ('Slot7', 'Amn4', 'Gym & Fitness chiều',   '17:00:00', '20:30:00', 25, 1),
+    ('Slot8', 'Amn2', 'Giao lưu Tennis sáng',  '06:00:00', '09:00:00', 8,  1),
+    ('Slot9', 'Amn2', 'Trận đấu Tennis chiều', '16:00:00', '19:00:00', 8,  1);
+
+-- 24. VEHICLE CARDS (THẺ TỪ RFID RA VÀO)
+INSERT INTO VehicleCards (Id, CardNumber, VehicleId, CardType, IssueDate, ExpiryDate, Status) VALUES
+    ('Card1',  'RFID-MB-001',   'XM-079095001234-59E112345',  'Monthly', '2024-01-15', '2027-01-15', 'Active'),
+    ('Card2',  'RFID-CAR-002',  'OT-079095001234-51H88866',   'Monthly', '2024-01-15', '2027-01-15', 'Active'),
+    ('Card3',  'RFID-MB-003',   'XM-079198002345-59F298765',  'Monthly', '2024-02-10', '2027-02-10', 'Active'),
+    ('Card4',  'RFID-CAR-004',  'OT-079088003456-51K12399',   'Monthly', '2024-02-10', '2027-02-10', 'Active'),
+    ('Card5',  'RFID-CAR-005',  'OT-079092004567-51G77788',   'Monthly', '2024-03-01', '2027-03-01', 'Active'),
+    ('Card6',  'RFID-MB-006',   'XM-079196005678-59S355544',  'Monthly', '2024-03-01', '2027-03-01', 'Active'),
+    ('Card7',  'RFID-MB-007',   'XM-079099006789-59N144433',  'Monthly', '2024-04-12', '2027-04-12', 'Active'),
+    ('Card8',  'RFID-CAR-008',  'OT-079080004455-51A99911',   'Monthly', '2024-04-12', '2027-04-12', 'Active'),
+    ('Card9',  'RFID-MB-009',   'XM-079194006677-59X166677',  'Monthly', '2024-05-20', '2027-05-20', 'Active'),
+    ('Card10', 'RFID-EB-010',   'XEL-079091001122-59MD11122', 'Monthly', '2024-05-20', '2027-05-20', 'Active');
+
+-- 25. TEMPORARY ABSENCES (KHAI BÁO TẠM VẮNG)
+INSERT INTO TemporaryAbsences (Id, ResidentId, ApartmentId, StartDate, EndDate, Reason, ContactPhone, Status, ApprovedBy) VALUES
+    ('Abs1', 'Res1', 'B1-F01-01', '2026-09-01', '2026-10-15', 'Đi công tác dài ngày tại Hà Nội', '0909500123', 'Approved', 'Acc2'),
+    ('Abs2', 'Res3', 'B1-F02-01', '2026-09-10', '2026-10-25', 'Về quê thăm gia đình và nghỉ dưỡng', '0922334455', 'Approved', 'Acc2'),
+    ('Abs3', 'Res5', 'B1-F02-03', '2026-10-01', '2026-11-15', 'Du học trao đổi ngắn hạn tại Singapore', '0944556677', 'Pending', NULL),
+    ('Abs4', 'Res7', 'B1-F03-02', '2026-11-20', '2027-01-05', 'Chữa bệnh nội trú tại nước ngoài', '0966778899', 'Pending', NULL);
+
+-- 26. COMPLAINT ATTACHMENTS (ẢNH MINH CHỨNG SỰ CỐ)
+INSERT INTO ComplaintAttachments (Id, ComplaintId, FileUrl, FileType) VALUES
+    ('CA1', 'CR1', 'https://storage.bms.vn/complaints/cr1.jpg', 'Image'),
+    ('CA2', 'CR3', 'https://storage.bms.vn/complaints/cr3.jpg', 'Image'),
+    ('CA3', 'CR4', 'https://storage.bms.vn/complaints/res_cr4.jpg', 'Image'),
+    ('CA4', 'CR5', 'https://storage.bms.vn/complaints/cr5.jpg', 'Image'),
+    ('CA5', 'CR8', 'https://storage.bms.vn/complaints/res_cr8.jpg', 'Image');
+
+-- 27. COMPLAINT LOGS (NHẬT KÝ TIẾN ĐỘ XỬ LÝ)
+INSERT INTO ComplaintLogs (Id, ComplaintId, StaffAccountId, PreviousStatus, NewStatus, Note) VALUES
+    ('CL1', 'CR2', 'Acc2', 'Pending',    'Assigned',   'Trưởng BQL đã tiếp nhận và chuyển cho đội An ninh kiểm tra'),
+    ('CL2', 'CR2', 'Acc5', 'Assigned',   'Processing', 'Đội an ninh đã lên nhắc nhở căn hộ tầng trên giữ trật tự sau 23h'),
+    ('CL3', 'CR3', 'Acc4', 'Pending',    'Assigned',   'Kỹ thuật viên đã tiếp nhận thông tin đèn hành lang tầng 2 nhấp nháy'),
+    ('CL4', 'CR4', 'Acc5', 'Processing', 'Resolved',   'Đã trích xuất camera an ninh và bàn giao dữ liệu cho cư dân'),
+    ('CL5', 'CR8', 'Acc5', 'Processing', 'Resolved',   'Đã lập biên bản bảo vệ trực sảnh và chấn chỉnh quy trình quẹt thẻ');
+
+-- 28. NOTIFICATIONS (THÔNG BÁO TÒA NHÀ)
+INSERT INTO Notifications (Id, BuildingId, Title, Summary, Content, Category, Priority, CreatedBy) VALUES
+    ('Noti1', 'B1', 'Bảo trì định kỳ hệ thống thang máy Tòa Ruby', 'Thang máy Ruby P1 sẽ tạm ngưng từ 09:00 - 11:30 sáng thứ 5.', 'Ban Quản Lý thông báo tiến hành kiểm định và bảo dưỡng định kỳ hệ thống cáp thang máy P1 nhằm đảm bảo an toàn tuyệt đối.', 'Maintenance', 'High', 'Acc2'),
+    ('Noti2', NULL, 'Thông báo chốt số điện nước kỳ tháng 08/2026', 'Hóa đơn sinh hoạt kỳ tháng 8 đã được cập nhật trên ứng dụng.', 'Kính gửi toàn thể quý cư dân, chỉ số điện nước và cước phí quản lý tháng 8/2026 đã được phát hành. Kính mời quý cư dân thanh toán trước ngày 15/09/2026.', 'FeeNotice', 'Normal', 'Acc3'),
+    ('Noti3', 'B1', 'Kế hoạch phun thuốc diệt côn trùng khuôn viên', 'Phun thuốc muỗi các khu vực hành lang và tầng hầm ngày 20/09.', 'Để phòng chống dịch sốt xuất huyết, BQL sẽ phối hợp trung tâm y tế phun khử khuẩn khu vực công cộng từ 22:00 ngày 20/09/2026.', 'General', 'Normal', 'Acc7'),
+    ('Noti4', NULL, 'Thông báo diễn tập phòng cháy chữa cháy (PCCC)', 'Diễn tập thoát hiểm và sử dụng bình chữa cháy vào 08:30 Chủ nhật.', 'Nhằm nâng cao kỹ năng an toàn PCCC, BQL phối hợp cùng Cảnh sát PCCC tổ chức buổi diễn tập thực tế tại sân trung tâm. Kính mời cư dân tham gia.', 'Emergency', 'Urgent', 'Acc2'),
+    ('Noti5', 'B1', 'Vận hành thẻ xe RFID thông minh tại hầm B1-B2', 'Áp dụng quẹt thẻ tự động nhận diện biển số từ ngày 01/10/2026.', 'Hệ thống barrier tự động tích hợp nhận diện biển số và quẹt thẻ RFID đã hoàn thiện nâng cấp, giúp cư dân di chuyển nhanh chóng, chống ùn tắc.', 'General', 'Normal', 'Acc5');

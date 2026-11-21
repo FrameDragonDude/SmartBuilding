@@ -2,7 +2,7 @@ import '../../data/model/invoice_data_model.dart';
 
 abstract class IInvoiceRepository {
   Future<ResidentInvoiceSummaryModel> getResidentInvoices({
-    String residentId = 'Res1',
+    String residentId ,
     String? status,
     int? year,
   });

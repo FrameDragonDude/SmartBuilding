@@ -7,7 +7,7 @@ class GetComplaintsUseCase {
   GetComplaintsUseCase(this.repository);
 
   Future<ComplaintSummaryDataModel> execute({
-    String residentId = 'Res1',
+    String residentId = '',
     String? category,
     String? status,
   }) async {

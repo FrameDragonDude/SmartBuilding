@@ -5,7 +5,6 @@ import 'cubit/dat_lich_cubit.dart';
 import 'cubit/dat_lich_state.dart';
 import 'widgets/dat_lich_tab_bar.dart';
 import 'widgets/qr_code_card.dart';
-import 'widgets/equipment_standards_card.dart';
 import 'widgets/dat_lich_actions.dart';
 import 'widgets/support_contact_card.dart';
 
@@ -41,7 +40,7 @@ class DatLichScreen extends StatelessWidget {
             },
           ),
           title: const Text(
-            'Chốt Chỉ Số & Vận Hành Kỹ Thu...',
+            'Mã QR check-in Tiện ích',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
@@ -49,19 +48,19 @@ class DatLichScreen extends StatelessWidget {
             ),
           ),
           centerTitle: false,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.help_outline_rounded, color: AppColors.textPrimary),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Trợ giúp & Hướng dẫn sử dụng vé tiện ích"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-            ),
-          ],
+          // actions: [
+          //   IconButton(
+          //     icon: const Icon(Icons.help_outline_rounded, color: AppColors.textPrimary),
+          //     onPressed: () {
+          //       ScaffoldMessenger.of(context).showSnackBar(
+          //         const SnackBar(
+          //           content: Text("Trợ giúp & Hướng dẫn sử dụng vé tiện ích"),
+          //           duration: Duration(seconds: 2),
+          //         ),
+          //       );
+          //     },
+          //   ),
+          // ],
         ),
         body: BlocConsumer<DatLichCubit, DatLichState>(
           listener: (context, state) {
@@ -141,6 +140,7 @@ class DatLichScreen extends StatelessWidget {
                     // Top Segmented Tab Filter Bar
                     DatLichTabBar(
                       selectedIndex: state.selectedTabIndex,
+                      bookingCode: state.bookingCode,
                       onTabSelected: (index) => cubit.selectTab(index),
                     ),
                     const SizedBox(height: 16),
@@ -153,8 +153,8 @@ class DatLichScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // 2. Equipment & Regulations Card
-                      const EquipmentStandardsCard(),
+                      // // 2. Equipment & Regulations Card
+                      // EquipmentStandardsCard(title: state.amenityTitle,),
                       const SizedBox(height: 20),
 
                       // 3. Bottom Action Buttons

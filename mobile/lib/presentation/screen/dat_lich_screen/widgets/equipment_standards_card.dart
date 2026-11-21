@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
 
 class EquipmentStandardsCard extends StatelessWidget {
-  const EquipmentStandardsCard({super.key});
+  final String title;
+  const EquipmentStandardsCard({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +51,7 @@ class EquipmentStandardsCard extends StatelessWidget {
               Expanded(
                 child: _buildEquipmentTile(
                   icon: Icons.microwave_outlined,
-                  title: 'Lò nướng BBQ điện',
+                  title: title,
                   subtitle: 'Công suất lớn 3500W',
                 ),
               ),

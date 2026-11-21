@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
+import '../../../../data/model/resident_profile_model.dart';
 
 class LegalDocItemData {
   final String title;
@@ -21,169 +22,211 @@ class LegalDocItemData {
   });
 }
 
-class LegalDocumentsSection extends StatelessWidget {
+class LegalDocumentsSection extends StatefulWidget {
+  final List<ResidentDocumentModel> documents;
   final VoidCallback? onUploadNew;
 
   const LegalDocumentsSection({
     super.key,
+    this.documents = const [],
     this.onUploadNew,
   });
 
-  List<LegalDocItemData> get _docs => [
-        const LegalDocItemData(
-          title: 'CCCD Mặt trước',
-          codeOrSubtitle: '079095001234',
-          subtext: 'Cấp ngày: 10/06/2021',
-          rightText: 'Cục CSQLHC về TTXH',
-          isApproved: true,
-        ),
-        const LegalDocItemData(
-          title: 'CCCD Mặt sau',
-          codeOrSubtitle: 'Chip điện tử & Vân tay',
-          subtext: 'Đặc điểm nhận dạng: Nốt ruồi cánh mũi',
-          rightText: '10/06/2021',
-          isApproved: true,
-        ),
-        const LegalDocItemData(
-          title: 'Xác nhận Tạm trú (CT07)',
-          codeOrSubtitle: 'Mã: TT-2024-08A',
-          subtext: 'Công an Phường An Phú',
-          rightText: 'Hạn: 01/2026',
-          isApproved: true,
-          customIcon: Icon(Icons.description_outlined,
-              color: AppColors.secondary, size: 22),
-        ),
-        const LegalDocItemData(
-          title: 'Khai báo Tạm vắng (TamVang)',
-          codeOrSubtitle: 'Tùy chọn khi vắng mặt > 30 ngày',
-          subtext: 'Chưa có bản ghi phát sinh',
-          rightText: '',
-          isApproved: false,
-          actionLabel: 'Nộp khai báo',
-          customIcon: Icon(Icons.flight_takeoff_rounded,
-              color: AppColors.textSecondary, size: 22),
-        ),
-        const LegalDocItemData(
-          title: 'Đăng ký kết hôn (GiayKetHon)',
-          codeOrSubtitle: 'Hồ sơ đồng sở hữu / Bảo lãnh',
-          subtext: 'Dành cho cư trú cùng gia đình',
-          rightText: '',
-          isApproved: false,
-          actionLabel: 'Tải lên hồ sơ',
-          customIcon: Icon(Icons.favorite_outline_rounded,
-              color: AppColors.textSecondary, size: 22),
-        ),
-      ];
+  @override
+  State<LegalDocumentsSection> createState() => _LegalDocumentsSectionState();
+}
+
+class _LegalDocumentsSectionState extends State<LegalDocumentsSection> {
+  bool _isExpanded = true;
+
+  List<LegalDocItemData> get _docs {
+    if (widget.documents.isNotEmpty) {
+      return widget.documents.map((doc) {
+        final isApproved = doc.verificationStatus.toLowerCase() == 'approved';
+        final typeTitle = _getDocumentTitle(doc.documentType);
+        final docNum = (doc.documentNumber != null && doc.documentNumber!.isNotEmpty)
+            ? doc.documentNumber!
+            : 'Mã hồ sơ: ${doc.id}';
+        final issued = (doc.issuedDate != null && doc.issuedDate!.isNotEmpty)
+            ? 'Cấp ngày: ${doc.issuedDate}'
+            : 'Đã nộp lên hệ thống';
+        final place = doc.issuedPlace ?? 'BMS System';
+
+        return LegalDocItemData(
+          title: typeTitle,
+          codeOrSubtitle: docNum,
+          subtext: issued,
+          rightText: place,
+          isApproved: isApproved,
+          customIcon: _getDocumentIcon(doc.documentType),
+        );
+      }).toList();
+    }
+
+    return const [
+      LegalDocItemData(
+        title: 'CCCD Mặt trước',
+        codeOrSubtitle: '079095001234',
+        subtext: 'Cấp ngày: 10/06/2021',
+        rightText: 'Cục CSQLHC về TTXH',
+        isApproved: true,
+      ),
+      LegalDocItemData(
+        title: 'CCCD Mặt sau',
+        codeOrSubtitle: 'Chip điện tử & Vân tay',
+        subtext: 'Đặc điểm nhận dạng: Nốt ruồi cánh mũi',
+        rightText: '10/06/2021',
+        isApproved: true,
+      ),
+      LegalDocItemData(
+        title: 'Xác nhận Tạm trú (CT07)',
+        codeOrSubtitle: 'Mã: TT-2024-08A',
+        subtext: 'Công an Phường An Phú',
+        rightText: 'Hạn: 01/2026',
+        isApproved: true,
+        customIcon: Icon(Icons.description_outlined, color: AppColors.secondary, size: 22),
+      ),
+    ];
+  }
+
+  String _getDocumentTitle(String type) {
+    switch (type) {
+      case 'CCCD_Front':
+        return 'CCCD Mặt trước';
+      case 'CCCD_Back':
+        return 'CCCD Mặt sau';
+      case 'TamTru':
+        return 'Xác nhận Tạm trú (CT07)';
+      case 'TamVang':
+        return 'Khai báo Tạm vắng (TamVang)';
+      case 'GiayKetHon':
+        return 'Giấy đăng ký kết hôn (GiayKetHon)';
+      default:
+        return 'Tài liệu Pháp lý ($type)';
+    }
+  }
+
+  Widget _getDocumentIcon(String type) {
+    switch (type) {
+      case 'CCCD_Front':
+      case 'CCCD_Back':
+        return const Icon(Icons.badge_outlined, color: AppColors.secondary, size: 22);
+      case 'TamTru':
+        return const Icon(Icons.description_outlined, color: AppColors.secondary, size: 22);
+      case 'TamVang':
+        return const Icon(Icons.flight_takeoff_rounded, color: AppColors.textSecondary, size: 22);
+      case 'GiayKetHon':
+        return const Icon(Icons.favorite_outline_rounded, color: AppColors.secondary, size: 22);
+      default:
+        return const Icon(Icons.folder_shared_outlined, color: AppColors.secondary, size: 22);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Title Row
-        Row(
-          children: [
-            const Icon(
-              Icons.folder_outlined,
-              color: AppColors.secondary,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Hồ sơ Pháp lý',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(width: 8),
+        // Section Title Row (Clickable)
+        InkWell(
+          onTap: () {
+            setState(() {
+              _isExpanded = !_isExpanded;
+            });
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.folder_outlined,
+                  color: AppColors.secondary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Hồ sơ Pháp lý',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
 
-            // Number Pill
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.secondary,
-                borderRadius: BorderRadius.circular(12),
+                // Number Pill
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_docs.length}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+
+                Icon(
+                  _isExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
+                  color: AppColors.textSecondary,
+                  size: 24,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        if (_isExpanded) ...[
+          // Document Cards List
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _docs.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final item = _docs[index];
+              return _buildDocCard(item, index);
+            },
+          ),
+          const SizedBox(height: 14),
+
+          // Black Upload Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: widget.onUploadNew ?? () {},
+              icon: const Icon(
+                Icons.upload_file_rounded,
+                color: Colors.white,
+                size: 18,
               ),
-              child: Text(
-                '${_docs.length}',
-                style: const TextStyle(
-                  fontSize: 11,
+              label: const Text(
+                'Tải lên giấy tờ mới (Upload Document)',
+                style: TextStyle(
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-            ),
-            const Spacer(),
-
-            // Top Upload Link
-            GestureDetector(
-              onTap: onUploadNew,
-              child: Row(
-                children: const [
-                  Icon(
-                    Icons.upload_file_outlined,
-                    size: 16,
-                    color: AppColors.secondary,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    'Tải lên mới',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.secondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // Document Cards List
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _docs.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            final item = _docs[index];
-            return _buildDocCard(item, index);
-          },
-        ),
-        const SizedBox(height: 14),
-
-        // Black Upload Button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: onUploadNew ?? () {},
-            icon: const Icon(
-              Icons.upload_file_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-            label: const Text(
-              'Tải lên giấy tờ mới (Upload Document)',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
