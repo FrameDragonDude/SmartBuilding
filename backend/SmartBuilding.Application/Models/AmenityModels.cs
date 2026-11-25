@@ -57,3 +57,8 @@ public class CreateAmenityBookingRequest
     public DateTime EndTime { get; set; }
     public int NumberOfGuests { get; set; } = 1;
 }
+
+public class UpdateBookingStatusRequest
+{
+    public string Status { get; set; } = "Confirmed";
+}

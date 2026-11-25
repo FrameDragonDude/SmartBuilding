@@ -8,6 +8,8 @@ type Props = {
   buildings?: BuildingItem[]
   selectedBuildingId?: string
   onSelectBuilding?: (buildingId: string) => void
+  currentUser?: { accountId: string; username: string; fullName: string; role: string } | null
+  onLogout?: () => void
 }
 
 export function Topbar({
@@ -16,7 +18,9 @@ export function Topbar({
   onMenu,
   buildings = [],
   selectedBuildingId = 'B1',
-  onSelectBuilding
+  onSelectBuilding,
+  currentUser,
+  onLogout
 }: Props) {
   const currentBuilding = buildings.find((b) => b.id === selectedBuildingId)
 
@@ -31,7 +35,7 @@ export function Topbar({
         <input
           value={query}
           onChange={(event) => onQuery(event.target.value)}
-          placeholder="Tìm căn hộ, cư dân, xe, hóa đơn..."
+          placeholder="Tìm căn hộ, cư dân, xe, hóa đơn, tiện ích..."
         />
       </label>
 
@@ -71,11 +75,39 @@ export function Topbar({
         <span className="system-status">
           <i /> {currentBuilding ? currentBuilding.name : 'Ruby Suites'} · Vận hành
         </span>
-        <button className="notification">
-          <Icon name="notifications" />
-          <b />
-        </button>
-        <span className="avatar">BQ</span>
+
+        {currentUser && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px' }}>
+            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a' }}>{currentUser.fullName}</span>
+              <span style={{ fontSize: '10px', fontWeight: 600, color: '#2563eb', textTransform: 'uppercase' }}>
+                {currentUser.role}
+              </span>
+            </div>
+            <span className="avatar" title={currentUser.fullName}>
+              {currentUser.username.slice(0, 2).toUpperCase()}
+            </span>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                title="Đăng xuất khỏi hệ thống"
+                style={{
+                  background: '#f1f5f9',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '6px',
+                  padding: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#dc2626'
+                }}
+              >
+                <Icon name="logout" style={{ fontSize: '16px' }} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </header>
   )

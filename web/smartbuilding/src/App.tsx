@@ -3,13 +3,15 @@ import { Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
 import { navigation } from './data/navigation'
 import { Dashboard } from './features/dashboard/Dashboard'
-import { ModulePlaceholder } from './features/placeholder/ModulePlaceholder'
 import { ResidentsPage } from './features/residents/ResidentsPage'
 import { ParkingPage } from './features/parking/ParkingPage'
 import { InvoicesPage } from './features/invoices/InvoicesPage'
 import { PricingPage } from './features/pricing/PricingPage'
 import { MepPage } from './features/mep/MepPage'
 import { ComplaintsPage } from './features/complaints/ComplaintsPage'
+import { AmenitiesPage } from './features/amenities/AmenitiesPage'
+import { RolesPage } from './features/roles/RolesPage'
+import { LoginPage } from './features/auth/LoginPage'
 import { getBuildings, type BuildingItem } from './data/api'
 
 const defaultBuildings: BuildingItem[] = [
@@ -23,7 +25,23 @@ const defaultBuildings: BuildingItem[] = [
   { id: 'B8', name: 'Tòa Pearl Plaza', buildingCode: 'PEARL-08', totalFloors: 32, totalBasements: 3, address: '08 Mai Chí Thọ, Phường An Phú, TP. Thủ Đức', totalApartments: 15 }
 ]
 
+type UserState = {
+  accountId: string
+  username: string
+  fullName: string
+  role: string
+}
+
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<UserState | null>(() => {
+    try {
+      const saved = localStorage.getItem('smartbuilding_user')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
+
   const [active, setActive] = useState('dashboard')
   const [query, setQuery] = useState('')
   const [navOpen, setNavOpen] = useState(false)
@@ -44,9 +62,18 @@ export default function App() {
       })
   }, [])
 
-  const selectedBuilding = buildings.find(b => b.id === selectedBuildingId) || buildings[0]
+  const handleLogout = () => {
+    localStorage.removeItem('smartbuilding_user')
+    setCurrentUser(null)
+  }
 
+  if (!currentUser) {
+    return <LoginPage onLoginSuccess={setCurrentUser} />
+  }
+
+  const selectedBuilding = buildings.find(b => b.id === selectedBuildingId) || buildings[0]
   const module = navigation.find((item) => item.id === active) ?? navigation[0]
+
   const selectModule = (id: string) => {
     setActive(id)
     setNavOpen(false)
@@ -59,6 +86,8 @@ export default function App() {
       setCreateParkingTrigger(true)
     } else if (active === 'invoices') {
       alert('Vui lòng sử dụng tính năng "Tính HĐ Tháng Mới" trên thanh công cụ.')
+    } else if (active === 'amenities') {
+      setActive('amenities')
     } else {
       setActive('residents')
       setCreateResidentTrigger(true)
@@ -84,6 +113,8 @@ export default function App() {
           buildings={buildings}
           selectedBuildingId={selectedBuildingId}
           onSelectBuilding={setSelectedBuildingId}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
         <main>
           <section className="page-heading">
@@ -97,6 +128,10 @@ export default function App() {
                   ? `Quản lý doanh thu, lập hóa đơn, đối soát sao kê và xử lý nợ quá hạn tại ${selectedBuilding?.name || 'khu căn hộ'}.`
                   : active === 'pricing'
                   ? `Cấu hình định mức 04 dịch vụ vận hành cốt lõi, quy tắc ân hạn và chế tài tự động cho ${selectedBuilding?.name || 'tòa nhà'}.`
+                  : active === 'amenities'
+                  ? `Quản lý tiện ích công cộng, khung giờ hoạt động và phê duyệt lịch đặt chỗ tại ${selectedBuilding?.name || 'tòa nhà'}.`
+                  : active === 'roles'
+                  ? `Quản lý tài khoản nhân sự BQL, ma trận phân quyền động Dynamic RBAC và tra cứu vết kiểm toán Audit Trail.`
                   : `Quản lý ${module.label.toLowerCase()} tại ${selectedBuilding?.name || 'Ruby Suites Residence'}.`}
               </p>
             </div>
@@ -133,8 +168,12 @@ export default function App() {
             <MepPage query={query} buildingId={selectedBuildingId} />
           ) : active === 'complaints' ? (
             <ComplaintsPage query={query} buildingId={selectedBuildingId} />
+          ) : active === 'amenities' ? (
+            <AmenitiesPage query={query} buildingId={selectedBuildingId} />
+          ) : active === 'roles' ? (
+            <RolesPage query={query} />
           ) : (
-            <ModulePlaceholder module={module} onBack={() => setActive('dashboard')} />
+            <Dashboard query={query} buildingId={selectedBuildingId} />
           )}
         </main>
       </div>

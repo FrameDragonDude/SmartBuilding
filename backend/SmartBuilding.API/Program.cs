@@ -673,6 +673,205 @@ app.MapPost("/api/amenities/bookings/{bookingId}/cancel", async (
         : Results.NotFound(new { message = "Không tìm thấy lịch đặt." });
 });
 
+// BQL: QUẢN LÝ TẤT CẢ LỊCH ĐẶT TIỆN ÍCH TRÊN WEB
+app.MapGet("/api/amenities/all-bookings", async (
+    string? status,
+    string? amenityId,
+    IConfiguration config,
+    CancellationToken token) =>
+{
+    var connStr = config.GetConnectionString("SmartBuilding")!;
+    await using var connection = new MySqlConnector.MySqlConnection(connStr);
+    await connection.OpenAsync(token);
+
+    const string sql = """
+        SELECT
+            ab.Id,
+            ab.AmenityId,
+            am.Name AS AmenityName,
+            r.FullName AS ResidentName,
+            r.PhoneNumber AS ResidentPhone,
+            a.ApartmentNumber,
+            DATE_FORMAT(ab.StartTime, '%d/%m/%Y') AS BookingDate,
+            DATE_FORMAT(ab.StartTime, '%H:%i') AS StartTime,
+            DATE_FORMAT(ab.EndTime, '%H:%i') AS EndTime,
+            ab.NumberOfGuests,
+            ab.Status,
+            DATE_FORMAT(ab.CreatedAt, '%d/%m/%Y %H:%i') AS CreatedAt
+        FROM AmenityBookings ab
+        JOIN Amenities am ON am.Id = ab.AmenityId
+        JOIN Residents r ON r.Id = ab.ResidentId
+        JOIN Apartments a ON a.Id = ab.ApartmentId
+        WHERE (@status IS NULL OR ab.Status = @status)
+          AND (@amenityId IS NULL OR ab.AmenityId = @amenityId)
+        ORDER BY ab.StartTime DESC;
+        """;
+
+    await using var cmd = new MySqlConnector.MySqlCommand(sql, connection);
+    cmd.Parameters.AddWithValue("@status", string.IsNullOrWhiteSpace(status) || status == "All" ? (object)DBNull.Value : status);
+    cmd.Parameters.AddWithValue("@amenityId", string.IsNullOrWhiteSpace(amenityId) || amenityId == "All" ? (object)DBNull.Value : amenityId);
+
+    var list = new List<object>();
+    await using var reader = await cmd.ExecuteReaderAsync(token);
+    while (await reader.ReadAsync(token))
+    {
+        list.Add(new
+        {
+            Id = reader.GetString("Id"),
+            AmenityId = reader.GetString("AmenityId"),
+            AmenityName = reader.GetString("AmenityName"),
+            ResidentName = reader.GetString("ResidentName"),
+            ResidentPhone = reader.GetString("ResidentPhone"),
+            ApartmentNumber = reader.GetString("ApartmentNumber"),
+            BookingDate = reader.GetString("BookingDate"),
+            StartTime = reader.GetString("StartTime"),
+            EndTime = reader.GetString("EndTime"),
+            NumberOfGuests = reader.GetInt32("NumberOfGuests"),
+            Status = reader.GetString("Status"),
+            CreatedAt = reader.GetString("CreatedAt")
+        });
+    }
+
+    return Results.Ok(list);
+});
+
+app.MapPost("/api/amenities/bookings/{bookingId}/status", async (
+    string bookingId,
+    UpdateBookingStatusRequest req,
+    IConfiguration config,
+    CancellationToken token) =>
+{
+    var connStr = config.GetConnectionString("SmartBuilding")!;
+    await using var connection = new MySqlConnector.MySqlConnection(connStr);
+    await connection.OpenAsync(token);
+
+    const string sql = "UPDATE AmenityBookings SET Status = @status WHERE Id = @id;";
+    await using var cmd = new MySqlConnector.MySqlCommand(sql, connection);
+    cmd.Parameters.AddWithValue("@status", req.Status);
+    cmd.Parameters.AddWithValue("@id", bookingId);
+
+    var rows = await cmd.ExecuteNonQueryAsync(token);
+    return rows > 0
+        ? Results.Ok(new { message = $"Đã cập nhật trạng thái lịch đặt sang '{req.Status}' thành công!" })
+        : Results.NotFound(new { message = "Không tìm thấy lịch đặt" });
+});
+
+// BQL: TÀI KHOẢN NHÂN VIÊN & PHÂN QUYỀN
+app.MapGet("/api/accounts/staff", async (
+    IConfiguration config,
+    CancellationToken token) =>
+{
+    var connStr = config.GetConnectionString("SmartBuilding")!;
+    await using var connection = new MySqlConnector.MySqlConnection(connStr);
+    await connection.OpenAsync(token);
+
+    const string sql = """
+        SELECT
+            a.Id,
+            a.Username,
+            a.Email,
+            a.IsActive,
+            r.RoleCode,
+            r.RoleName,
+            r.Description AS RoleDescription,
+            DATE_FORMAT(a.CreatedAt, '%d/%m/%Y %H:%i') AS CreatedAt
+        FROM Accounts a
+        LEFT JOIN UserRoles ur ON ur.AccountId = a.Id
+        LEFT JOIN Roles r ON r.Id = ur.RoleId
+        WHERE a.ResidentId IS NULL
+        ORDER BY a.CreatedAt;
+        """;
+
+    await using var cmd = new MySqlConnector.MySqlCommand(sql, connection);
+    var list = new List<object>();
+    await using var reader = await cmd.ExecuteReaderAsync(token);
+    while (await reader.ReadAsync(token))
+    {
+        list.Add(new
+        {
+            Id = reader.GetString("Id"),
+            Username = reader.GetString("Username"),
+            Email = reader.GetString("Email"),
+            IsActive = reader.GetBoolean("IsActive"),
+            RoleCode = reader.IsDBNull(reader.GetOrdinal("RoleCode")) ? "Staff" : reader.GetString("RoleCode"),
+            RoleName = reader.IsDBNull(reader.GetOrdinal("RoleName")) ? "Nhân viên BQL" : reader.GetString("RoleName"),
+            RoleDescription = reader.IsDBNull(reader.GetOrdinal("RoleDescription")) ? "" : reader.GetString("RoleDescription"),
+            CreatedAt = reader.GetString("CreatedAt")
+        });
+    }
+
+    return Results.Ok(list);
+});
+
+app.MapPost("/api/accounts/{id}/toggle-status", async (
+    string id,
+    IConfiguration config,
+    CancellationToken token) =>
+{
+    var connStr = config.GetConnectionString("SmartBuilding")!;
+    await using var connection = new MySqlConnector.MySqlConnection(connStr);
+    await connection.OpenAsync(token);
+
+    const string sql = "UPDATE Accounts SET IsActive = NOT IsActive WHERE Id = @id;";
+    await using var cmd = new MySqlConnector.MySqlCommand(sql, connection);
+    cmd.Parameters.AddWithValue("@id", id);
+
+    var rows = await cmd.ExecuteNonQueryAsync(token);
+    return rows > 0
+        ? Results.Ok(new { message = "Đã cập nhật trạng thái tài khoản thành công!" })
+        : Results.NotFound(new { message = "Không tìm thấy tài khoản" });
+});
+
+// BQL: NHẬT KÝ KIỂM TOÁN HỆ THỐNG (AUDIT TRAILS)
+app.MapGet("/api/audit-trails", async (
+    IConfiguration config,
+    CancellationToken token) =>
+{
+    var connStr = config.GetConnectionString("SmartBuilding")!;
+    await using var connection = new MySqlConnector.MySqlConnection(connStr);
+    await connection.OpenAsync(token);
+
+    const string sql = """
+        SELECT
+            at.Id,
+            at.AccountId,
+            IFNULL(a.Username, 'System') AS Username,
+            at.ActionType,
+            at.TableName,
+            at.RecordId,
+            at.OldValues,
+            at.NewValues,
+            at.IpAddress,
+            DATE_FORMAT(at.Timestamp, '%d/%m/%Y %H:%i:%s') AS Timestamp
+        FROM AuditTrails at
+        LEFT JOIN Accounts a ON a.Id = at.AccountId
+        ORDER BY at.Timestamp DESC
+        LIMIT 50;
+        """;
+
+    await using var cmd = new MySqlConnector.MySqlCommand(sql, connection);
+    var list = new List<object>();
+    await using var reader = await cmd.ExecuteReaderAsync(token);
+    while (await reader.ReadAsync(token))
+    {
+        list.Add(new
+        {
+            Id = reader.GetString("Id"),
+            AccountId = reader.IsDBNull(reader.GetOrdinal("AccountId")) ? null : reader.GetString("AccountId"),
+            Username = reader.GetString("Username"),
+            ActionType = reader.GetString("ActionType"),
+            TableName = reader.GetString("TableName"),
+            RecordId = reader.GetString("RecordId"),
+            OldValues = reader.IsDBNull(reader.GetOrdinal("OldValues")) ? null : reader.GetString("OldValues"),
+            NewValues = reader.IsDBNull(reader.GetOrdinal("NewValues")) ? null : reader.GetString("NewValues"),
+            IpAddress = reader.IsDBNull(reader.GetOrdinal("IpAddress")) ? null : reader.GetString("IpAddress"),
+            Timestamp = reader.GetString("Timestamp")
+        });
+    }
+
+    return Results.Ok(list);
+});
+
 
 // SYSTEM
 

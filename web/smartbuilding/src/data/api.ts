@@ -807,4 +807,135 @@ export async function updateComplaintStatus(
   return json
 }
 
+// ==========================================
+// TIỆN ÍCH & ĐẶT LỊCH (AMENITIES FOR WEB)
+// ==========================================
+
+export type AmenityItem = {
+  id: string
+  name: string
+  imageUrl: string | null
+  maxCapacity: number
+  openTime: string
+  closeTime: string
+  slotDurationMinutes: number
+  isActive: boolean
+}
+
+export type AmenityBookingItem = {
+  id: string
+  amenityId: string
+  amenityName: string
+  residentName: string
+  residentPhone: string
+  apartmentNumber: string
+  bookingDate: string
+  startTime: string
+  endTime: string
+  numberOfGuests: number
+  status: 'Confirmed' | 'Cancelled' | 'Completed' | string
+  createdAt: string
+}
+
+export async function getAllAmenities(): Promise<AmenityItem[]> {
+  const res = await fetch(`${apiUrl}/amenities`)
+  if (!res.ok) throw new Error('Không thể tải danh sách tiện ích')
+  return res.json()
+}
+
+export async function getAllAmenityBookings(params?: {
+  status?: string
+  amenityId?: string
+}): Promise<AmenityBookingItem[]> {
+  const query = new URLSearchParams()
+  if (params?.status && params.status !== 'All') query.set('status', params.status)
+  if (params?.amenityId && params.amenityId !== 'All') query.set('amenityId', params.amenityId)
+
+  const url = `${apiUrl}/amenities/all-bookings${query.toString() ? `?${query.toString()}` : ''}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Không thể tải danh sách đặt lịch')
+  return res.json()
+}
+
+export async function updateBookingStatus(
+  bookingId: string,
+  status: 'Confirmed' | 'Cancelled' | 'Completed'
+): Promise<{ message: string }> {
+  const res = await fetch(`${apiUrl}/amenities/bookings/${bookingId}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message || 'Lỗi cập nhật trạng thái đặt lịch')
+  return json
+}
+
+// ==========================================
+// TÀI KHOẢN, PHÂN QUYỀN & AUDIT TRAILS
+// ==========================================
+
+export type StaffAccountItem = {
+  id: string
+  username: string
+  email: string
+  isActive: boolean
+  roleCode: string
+  roleName: string
+  roleDescription: string
+  createdAt: string
+}
+
+export type AuditTrailItem = {
+  id: string
+  accountId: string | null
+  username: string
+  actionType: 'INSERT' | 'UPDATE' | 'DELETE' | 'LOGIN' | string
+  tableName: string
+  recordId: string
+  oldValues: string | null
+  newValues: string | null
+  ipAddress: string | null
+  timestamp: string
+}
+
+export async function getStaffAccounts(): Promise<StaffAccountItem[]> {
+  const res = await fetch(`${apiUrl}/accounts/staff`)
+  if (!res.ok) throw new Error('Không thể tải danh sách nhân viên')
+  return res.json()
+}
+
+export async function toggleAccountStatus(id: string): Promise<{ message: string }> {
+  const res = await fetch(`${apiUrl}/accounts/${id}/toggle-status`, {
+    method: 'POST'
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message || 'Lỗi đổi trạng thái tài khoản')
+  return json
+}
+
+export async function getAuditTrails(): Promise<AuditTrailItem[]> {
+  const res = await fetch(`${apiUrl}/audit-trails`)
+  if (!res.ok) throw new Error('Không thể tải nhật ký kiểm toán')
+  return res.json()
+}
+
+export async function loginStaff(usernameOrEmail: string, password: string): Promise<{
+  accountId: string
+  username: string
+  fullName: string
+  email: string
+  role?: string
+  message: string
+}> {
+  const res = await fetch(`${apiUrl}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usernameOrEmail, password })
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message || 'Đăng nhập không thành công')
+  return json
+}
+
 
