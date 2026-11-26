@@ -37,7 +37,7 @@ class LegalDocumentsSection extends StatefulWidget {
 }
 
 class _LegalDocumentsSectionState extends State<LegalDocumentsSection> {
-  bool _isExpanded = true;
+  bool _isExpanded = false;
 
   List<LegalDocItemData> get _docs {
     if (widget.documents.isNotEmpty) {

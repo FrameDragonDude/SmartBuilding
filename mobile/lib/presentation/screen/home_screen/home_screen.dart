@@ -11,8 +11,9 @@ import 'widgets/announcement_card.dart';
 
 class HomeScreen extends StatelessWidget {
   final String? residentId;
+  final ValueChanged<int>? onNavigateTab;
 
-  const HomeScreen({super.key, this.residentId});
+  const HomeScreen({super.key, this.residentId, this.onNavigateTab});
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +71,7 @@ class HomeScreen extends StatelessWidget {
                     )
                   else
                     const ResidentWelcomeCard(),
-                  const QuickActionsGrid(),
+                  QuickActionsGrid(onNavigateTab: onNavigateTab),
                   if (data.invoice != null)
                     InvoiceSummaryCard(
                       monthYear: "${data.invoice!.billingMonth.toString().padLeft(2, '0')}/${data.invoice!.billingYear}",
@@ -80,9 +81,12 @@ class HomeScreen extends StatelessWidget {
                       status: data.invoice!.status,
                       paymentGateway: data.invoice!.paymentMethod,
                       paymentDate: data.invoice!.paymentDate,
+                      onTap: () => onNavigateTab?.call(1),
                     )
                   else
-                    const InvoiceSummaryCard(),
+                    InvoiceSummaryCard(
+                      onTap: () => onNavigateTab?.call(1),
+                    ),
                   VehicleParkingSection(vehicles: data.vehicles),
                   AmenityBookingCard(booking: data.upcomingBooking),
                   AnnouncementCard(announcement: data.announcement),

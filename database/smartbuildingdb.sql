@@ -761,7 +761,12 @@ INSERT INTO InvoiceDetails (Id, InvoiceId, ItemType, Description, Quantity, Unit
     ('ID7',  'Inv4', 'Electricity',   N'Điện sinh hoạt (210 kWh)',        210.00, 2323.81,   488000.00),
     ('ID8',  'Inv4', 'Water',         N'Nước sinh hoạt (16 m3)',          16.00,  14562.50,  233000.00),
     ('ID9',  'Inv4', 'ParkingFee',    N'Phí đỗ ô tô 51K-123.99',          1.00,   1500000.00,1500000.00),
-    ('ID10', 'Inv5', 'ParkingFee',    N'Phí đỗ ô tô 51G-777.88',          1.00,   1500000.00,1500000.00);
+    ('ID10', 'Inv5', 'ParkingFee',    N'Phí đỗ ô tô 51G-777.88',          1.00,   1500000.00,1500000.00),
+    ('ID11', 'Inv8', 'ManagementFee', N'Phí quản lý căn hộ (95 m2)',      95.00,  18000.00,  1710000.00),
+    ('ID12', 'Inv8', 'Electricity',   N'Điện sinh hoạt (220 kWh)',        220.00, 2318.18,   510000.00),
+    ('ID13', 'Inv8', 'Water',         N'Nước sinh hoạt (22 m3)',          22.00,  12272.73,  270000.00),
+    ('ID14', 'Inv8', 'ParkingFee',    N'Phí giữ xe ô tô 51A-999.11',      1.00,   1500000.00,1500000.00),
+    ('ID15', 'Inv8', 'ParkingFee',    N'Phí giữ xe máy 59P2-456.78',      1.00,   120000.00, 120000.00);
 
 -- 16. PAYMENTS
 INSERT INTO Payments (Id, InvoiceId, TransactionCode, PaymentMethod, Amount, ProofReceiptUrl, PaymentDate, Status, PayerNote) VALUES

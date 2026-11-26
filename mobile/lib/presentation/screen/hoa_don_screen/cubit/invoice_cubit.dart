@@ -22,26 +22,39 @@ class InvoiceCubit extends Cubit<InvoiceState> {
   Future<void> fetchInvoices({
     String residentId = 'Res1',
     String? status,
-    int? year,
+    int? year = 2026,
   }) async {
     emit(InvoiceLoading());
     try {
       final summary = await getResidentInvoicesUseCase.execute(
         residentId: residentId,
         status: status,
-        year: year,
+        year: year == 0 ? null : year,
       );
 
       if (summary.invoices.isNotEmpty) {
         final latestInvoice = summary.invoices.first;
         final detail = await getInvoiceDetailUseCase.execute(latestInvoice.id);
-        emit(InvoiceLoaded(summary: summary, selectedDetail: detail));
+        emit(InvoiceLoaded(
+          summary: summary,
+          selectedDetail: detail,
+          selectedYear: year ?? 2026,
+        ));
       } else {
-        emit(InvoiceLoaded(summary: summary));
+        emit(InvoiceLoaded(
+          summary: summary,
+          selectedYear: year ?? 2026,
+        ));
       }
     } catch (e) {
       emit(InvoiceError(e.toString().replaceAll('Exception: ', '')));
     }
+  }
+
+  Future<void> selectYear(int year, {String residentId = 'Res1'}) async {
+    final currentTab = state is InvoiceLoaded ? (state as InvoiceLoaded).activeTab : 2;
+    await fetchInvoices(residentId: residentId, year: year);
+    changeTab(currentTab);
   }
 
   Future<void> selectInvoiceDetail(String invoiceId) async {

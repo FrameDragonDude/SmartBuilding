@@ -4,6 +4,7 @@ import '../../configs/theme/app_color.dart';
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final String subtitle;
+  final bool hasUnreadNotification;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onProfileTap;
   final VoidCallback? onDropdownTap;
@@ -12,6 +13,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     this.title = "Ruby Suites",
     this.subtitle = "Căn hộ RB-0101",
+    this.hasUnreadNotification = true,
     this.onNotificationTap,
     this.onProfileTap,
     this.onDropdownTap,
@@ -89,18 +91,19 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   size: 26,
                 ),
               ),
-              Positioned(
-                right: 11,
-                top: 11,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.secondary,
-                    shape: BoxShape.circle,
+              if (hasUnreadNotification)
+                Positioned(
+                  right: 11,
+                  top: 11,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppColors.secondary,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(width: 8),

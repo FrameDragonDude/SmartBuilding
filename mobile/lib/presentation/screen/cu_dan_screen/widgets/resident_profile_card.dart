@@ -35,7 +35,7 @@ class ResidentProfileCard extends StatefulWidget {
 }
 
 class _ResidentProfileCardState extends State<ResidentProfileCard> {
-  bool _isExpanded = true;
+  bool _isExpanded = false;
   bool _isSensitiveVisible = false;
 
   String _maskValue(String raw, {int showPrefix = 3, int showSuffix = 3}) {

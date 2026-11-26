@@ -25,6 +25,7 @@ class ApiUrls {
   static String residentProfile(String residentId) => '/residents/$residentId/profile';
   static const String registerVehicle = '/residents/register-vehicle';
 
-  // Home Endpoints
+  // Home & Notification Endpoints
   static const String homeData = '/home';
+  static String notifications([String residentId = 'Res1']) => '/notifications?residentId=$residentId';
 }

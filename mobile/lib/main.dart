@@ -10,6 +10,7 @@ import 'package:mobile/presentation/screen/home_screen/cubit/home_cubit.dart';
 import 'package:mobile/presentation/screen/home_screen/cubit/home_state.dart';
 import 'package:mobile/presentation/screen/home_screen/home_screen.dart';
 import 'package:mobile/presentation/screen/khieu_nai_screen/khieu_nai_screen.dart';
+import 'package:mobile/presentation/screen/thong_bao_screen/thong_bao_screen.dart';
 import 'package:mobile/presentation/screen/tien_ich_screen/tien_ich_screen.dart';
 
 import 'configs/theme/app_color.dart';
@@ -55,6 +56,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
+  bool _hasUnreadNotification = true;
 
   void _showProfileMenu(BuildContext context, String apartmentSubtitle) {
     showModalBottomSheet(
@@ -202,7 +204,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
-      HomeScreen(residentId: widget.residentId),
+      HomeScreen(
+        residentId: widget.residentId,
+        onNavigateTab: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
       HoaDonScreen(residentId: widget.residentId),
       TienIchScreen(residentId: widget.residentId),
       KhieuNaiScreen(residentId: widget.residentId),
@@ -224,6 +233,27 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             appBar: CustomAppBar(
               title: title,
               subtitle: subtitle,
+              hasUnreadNotification: _hasUnreadNotification,
+              onNotificationTap: () async {
+                final result = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ThongBaoScreen(
+                      residentId: widget.residentId,
+                      onUnreadChanged: (hasUnread) {
+                        setState(() {
+                          _hasUnreadNotification = hasUnread;
+                        });
+                      },
+                    ),
+                  ),
+                );
+                if (result != null) {
+                  setState(() {
+                    _hasUnreadNotification = result;
+                  });
+                }
+              },
               onProfileTap: () => _showProfileMenu(context, subtitle),
             ),
             backgroundColor: AppColors.background,

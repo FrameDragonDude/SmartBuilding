@@ -467,8 +467,86 @@ app.MapPost("/api/amenities/bookings/{bookingId}/cancel", async (
 });
 
 
+app.MapGet("/api/notifications", async (
+    string? residentId,
+    MySqlConnectionFactory connectionFactory,
+    CancellationToken token) =>
+{
+    residentId = string.IsNullOrWhiteSpace(residentId) ? "Res1" : residentId;
+    await using var connection = connectionFactory.CreateConnection();
+    await connection.OpenAsync(token);
+
+    const string sql = """
+        SELECT
+            n.Id,
+            n.Title,
+            COALESCE(n.Summary, '') AS Summary,
+            n.Content,
+            n.Category,
+            n.Priority,
+            DATE_FORMAT(n.PublishDate, '%H:%i %d/%m/%Y') AS PublishDateFormatted,
+            n.PublishDate AS SortDate
+        FROM Notifications n
+
+        UNION ALL
+
+        SELECT
+            cr.Id,
+            CONCAT('[Phản hồi] ', cr.Title) AS Title,
+            CONCAT('Trạng thái: ', cr.Status, ' • ', COALESCE(cl.Note, 'Đã ghi nhận phản hồi')) AS Summary,
+            cr.Content,
+            'Complaint' AS Category,
+            IF(cr.Status = 'Pending', 'High', 'Normal') AS Priority,
+            DATE_FORMAT(cr.CreatedAt, '%H:%i %d/%m/%Y') AS PublishDateFormatted,
+            cr.CreatedAt AS SortDate
+        FROM ComplaintRequests cr
+        LEFT JOIN ComplaintLogs cl ON cl.Id = (
+            SELECT Id FROM ComplaintLogs WHERE ComplaintId = cr.Id ORDER BY CreatedAt DESC LIMIT 1
+        )
+        WHERE cr.ResidentId = @ResidentId
+
+        ORDER BY SortDate DESC;
+        """;
+
+    var list = new List<NotificationDto>();
+    await using var cmd = new MySqlConnector.MySqlCommand(sql, connection);
+    cmd.Parameters.AddWithValue("@ResidentId", residentId);
+    await using var reader = await cmd.ExecuteReaderAsync(token);
+    while (await reader.ReadAsync(token))
+    {
+        var summaryOrdinal = reader.GetOrdinal("Summary");
+        var summaryStr = reader.IsDBNull(summaryOrdinal) ? "" : reader.GetString(summaryOrdinal);
+
+        list.Add(new NotificationDto
+        {
+            Id = reader.GetString("Id"),
+            Title = reader.GetString("Title"),
+            Summary = summaryStr,
+            Content = reader.GetString("Content"),
+            Category = reader.GetString("Category"),
+            Priority = reader.GetString("Priority"),
+            PublishDate = reader.GetString("PublishDateFormatted"),
+            IsRead = false
+        });
+    }
+
+    return Results.Ok(list);
+});
+
 // SYSTEM
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 
 app.Run();
+
+public class NotificationDto
+{
+    public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Summary { get; set; } = "";
+    public string Content { get; set; } = "";
+    public string Category { get; set; } = "";
+    public string Priority { get; set; } = "";
+    public string PublishDate { get; set; } = "";
+    public bool IsRead { get; set; } = false;
+}

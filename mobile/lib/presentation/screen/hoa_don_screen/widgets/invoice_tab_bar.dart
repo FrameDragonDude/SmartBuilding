@@ -1,29 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../../../configs/theme/app_color.dart';
 
-class InvoiceTabBar extends StatefulWidget {
-  final Function(int index)? onTabChanged;
+class InvoiceTabBar extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int>? onTabChanged;
 
   const InvoiceTabBar({
     super.key,
+    this.selectedIndex = 0,
     this.onTabChanged,
   });
 
-  @override
-  State<InvoiceTabBar> createState() => _InvoiceTabBarState();
-}
-
-class _InvoiceTabBarState extends State<InvoiceTabBar> {
-  int _selectedIndex = 0;
-
-  final List<Map<String, dynamic>> _tabs = const [
+  static const List<Map<String, dynamic>> _tabs = [
     {
       'label': 'Hóa đơn tháng',
       'icon': Icons.receipt_long_rounded,
     },
     {
       'label': 'Chỉ số Điện Nước',
-      'icon': Icons.bolt_outlined,
+      'icon': Icons.speed_rounded,
     },
     {
       'label': 'Lịch sử',
@@ -41,18 +36,13 @@ class _InvoiceTabBarState extends State<InvoiceTabBar> {
       ),
       child: Row(
         children: List.generate(_tabs.length, (index) {
-          final isSelected = index == _selectedIndex;
+          final isSelected = index == selectedIndex;
           final tab = _tabs[index];
 
           return Expanded(
             child: GestureDetector(
               onTap: () {
-                setState(() {
-                  _selectedIndex = index;
-                });
-                if (widget.onTabChanged != null) {
-                  widget.onTabChanged!(index);
-                }
+                onTabChanged?.call(index);
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -63,7 +53,7 @@ class _InvoiceTabBarState extends State<InvoiceTabBar> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
+                            color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -74,7 +64,7 @@ class _InvoiceTabBarState extends State<InvoiceTabBar> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      tab['icon'],
+                      tab['icon'] as IconData,
                       size: 18,
                       color: isSelected
                           ? AppColors.secondary
@@ -83,7 +73,7 @@ class _InvoiceTabBarState extends State<InvoiceTabBar> {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        tab['label'],
+                        tab['label'] as String,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight:

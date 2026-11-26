@@ -9,6 +9,8 @@ class InvoiceItemData {
   final String subtitle;
   final String amountText;
   final String? meterImageAction;
+  final VoidCallback? onTap;
+  final String? itemType;
 
   const InvoiceItemData({
     required this.icon,
@@ -18,6 +20,8 @@ class InvoiceItemData {
     required this.subtitle,
     required this.amountText,
     this.meterImageAction,
+    this.onTap,
+    this.itemType,
   });
 }
 
@@ -46,6 +50,7 @@ class InvoiceLineItemsCard extends StatelessWidget {
           subtitle: 'EM-RB0101-01 • 420 ➔ 690',
           amountText: '585.000 đ',
           meterImageAction: 'Ảnh số đo',
+          itemType: 'Electricity',
         ),
         InvoiceItemData(
           icon: Icons.water_drop_outlined,
@@ -55,6 +60,7 @@ class InvoiceLineItemsCard extends StatelessWidget {
           subtitle: 'WM-RB0101-01 • 35 ➔ 52',
           amountText: '185.000 đ',
           meterImageAction: 'Ảnh số đo',
+          itemType: 'Water',
         ),
         InvoiceItemData(
           icon: Icons.directions_car_outlined,
@@ -86,7 +92,7 @@ class InvoiceLineItemsCard extends StatelessWidget {
         border: Border.all(color: AppColors.cardBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -131,7 +137,7 @@ class InvoiceLineItemsCard extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: listItems.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final item = listItems[index];
               return _buildItemRow(item);
@@ -143,7 +149,7 @@ class InvoiceLineItemsCard extends StatelessWidget {
   }
 
   Widget _buildItemRow(InvoiceItemData item) {
-    return Row(
+    final rowContent = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Left Icon Box
@@ -200,33 +206,64 @@ class InvoiceLineItemsCard extends StatelessWidget {
               ),
             ),
             if (item.meterImageAction != null) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               GestureDetector(
-                onTap: () {},
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.camera_alt_outlined,
-                      size: 13,
-                      color: AppColors.secondary,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      item.meterImageAction!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.secondary,
+                onTap: item.onTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: item.iconBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: item.iconColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.visibility_outlined,
+                        size: 13,
+                        color: item.iconColor,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        item.meterImageAction!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: item.iconColor,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ],
         ),
+        if (item.onTap != null) ...[
+          const SizedBox(width: 4),
+          const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textMuted),
+        ],
       ],
+    );
+
+    if (item.onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: item.onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+            child: rowContent,
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: rowContent,
     );
   }
 }

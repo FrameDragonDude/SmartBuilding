@@ -184,26 +184,28 @@ public class HomeRepository : IHomeRepository
             }
         }
 
-        // 5. Latest Announcement
+        // 5. Latest Announcement or Resident's Latest Complaint
         const string announcementSql = """
             SELECT
                 Title,
-                Content
+                Content,
+                DATE_FORMAT(CreatedAt, '%H:%i %d/%m/%Y') AS FormattedDate
             FROM ComplaintRequests
-            WHERE Status IN ('Pending', 'Processing', 'Assigned')
+            WHERE ResidentId = @ResidentId
             ORDER BY CreatedAt DESC
             LIMIT 1;
             """;
 
         await using (var cmd = new MySqlCommand(announcementSql, connection))
         {
+            cmd.Parameters.AddWithValue("@ResidentId", residentId ?? "Res1");
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
             if (await reader.ReadAsync(cancellationToken))
             {
                 homeData.Announcement = new AnnouncementHomeDto
                 {
                     Title = reader.GetString("Title"),
-                    Date = "Hôm nay",
+                    Date = reader.GetString("FormattedDate"),
                     Content = reader.GetString("Content"),
                     Hotline = "1900 8899"
                 };
@@ -212,9 +214,9 @@ public class HomeRepository : IHomeRepository
             {
                 homeData.Announcement = new AnnouncementHomeDto
                 {
-                    Title = "Bảo trì thang máy Tháp Ruby",
-                    Date = "Hôm nay",
-                    Content = "Thang máy P1 & P2 tạm ngưng để kiểm định an toàn định kỳ từ 14:00 đến 17:00 ngày 10/09/2026. Quý cư dân vui lòng sử dụng thang hàng P3.",
+                    Title = "Bảo trì định kỳ hệ thống thang máy Tòa Ruby",
+                    Date = "12/09/2026",
+                    Content = "Ban Quản Lý thông báo tiến hành kiểm định và bảo dưỡng định kỳ hệ thống cáp thang máy P1 nhằm đảm bảo an toàn tuyệt đối.",
                     Hotline = "1900 8899"
                 };
             }

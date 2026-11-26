@@ -17,7 +17,7 @@ class VehiclesParkingSection extends StatefulWidget {
 }
 
 class _VehiclesParkingSectionState extends State<VehiclesParkingSection> {
-  bool _isExpanded = true;
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {

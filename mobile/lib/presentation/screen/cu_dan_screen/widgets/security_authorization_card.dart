@@ -9,7 +9,7 @@ class SecurityAuthorizationCard extends StatefulWidget {
 }
 
 class _SecurityAuthorizationCardState extends State<SecurityAuthorizationCard> {
-  bool _isExpanded = true;
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {

@@ -26,7 +26,7 @@ class ResidenceContractCard extends StatefulWidget {
 }
 
 class _ResidenceContractCardState extends State<ResidenceContractCard> {
-  bool _isExpanded = true;
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {

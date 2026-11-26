@@ -9,6 +9,7 @@ class InvoiceSummaryCard extends StatelessWidget {
   final String status;
   final String paymentGateway;
   final String paymentDate;
+  final VoidCallback? onTap;
 
   const InvoiceSummaryCard({
     super.key,
@@ -19,6 +20,7 @@ class InvoiceSummaryCard extends StatelessWidget {
     this.status = "Paid",
     this.paymentGateway = "VNPay QR",
     this.paymentDate = "02/09/2026",
+    this.onTap,
   });
 
   String _formatCurrency(double amount) {
@@ -66,7 +68,6 @@ class InvoiceSummaryCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(18),
@@ -78,55 +79,70 @@ class InvoiceSummaryCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.lightBlueContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.receipt_long_outlined, color: AppColors.secondary, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Hóa đơn kỳ $monthYear", style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 2),
-                      Text("Mã: $invoiceCode", style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                    ],
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: badgeBg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(badgeIcon, color: badgeText, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      statusLabel,
-                      style: TextStyle(color: badgeText, fontSize: 11, fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.lightBlueContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.receipt_long_outlined, color: AppColors.secondary, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Hóa đơn kỳ $monthYear", style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 2),
+                            Text("Mã: $invoiceCode", style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: badgeBg,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(badgeIcon, color: badgeText, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                statusLabel,
+                                style: TextStyle(color: badgeText, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (onTap != null) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 20),
+                        ],
+                      ],
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
           const SizedBox(height: 16),
 
           // Total Amount Row
@@ -215,6 +231,9 @@ class InvoiceSummaryCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
+    ),
+    ),
     );
   }
 }

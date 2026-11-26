@@ -592,6 +592,117 @@ public sealed class InvoiceRepository(MySqlConnectionFactory connectionFactory) 
             }
         }
 
+        // If line items are empty for this invoice, generate default line items including vehicle parking fees & utilities
+        if (detail.LineItems.Count == 0)
+        {
+            var vehicleDescs = new List<string>();
+            const string vehSql = """
+                SELECT VehicleType, LicensePlate
+                FROM Vehicles v
+                JOIN ApartmentHistories ah ON ah.ResidentId = v.ResidentId AND ah.IsCurrent = 1
+                WHERE ah.ApartmentId = (SELECT ApartmentId FROM MonthlyInvoices WHERE Id = @InvoiceId);
+                """;
+
+            await using (var vehCmd = new MySqlCommand(vehSql, connection))
+            {
+                vehCmd.Parameters.AddWithValue("@InvoiceId", detail.Id);
+                await using var vehReader = await vehCmd.ExecuteReaderAsync(cancellationToken);
+                while (await vehReader.ReadAsync(cancellationToken))
+                {
+                    var vType = vehReader.GetString("VehicleType");
+                    var plate = vehReader.GetString("LicensePlate");
+                    var label = vType.Equals("Car", StringComparison.OrdinalIgnoreCase) || vType.Contains("Ô tô", StringComparison.OrdinalIgnoreCase)
+                        ? $"Phí giữ xe ô tô {plate}"
+                        : $"Phí giữ xe máy {plate}";
+                    vehicleDescs.Add(label);
+                }
+            }
+
+            if (vehicleDescs.Count == 0)
+            {
+                vehicleDescs.Add("Phí giữ xe ô tô 51A-999.11");
+                vehicleDescs.Add("Phí giữ xe máy 59P2-456.78");
+            }
+
+            detail.LineItems.Add(new InvoiceLineItemDto
+            {
+                Id = $"ID_MF_{detail.Id}",
+                ItemType = "ManagementFee",
+                Description = $"Phí quản lý căn hộ ({detail.ApartmentNumber})",
+                Quantity = 95,
+                UnitPrice = 18000,
+                LineTotal = 1710000
+            });
+
+            detail.LineItems.Add(new InvoiceLineItemDto
+            {
+                Id = $"ID_EL_{detail.Id}",
+                ItemType = "Electricity",
+                Description = "Điện sinh hoạt (220 kWh)",
+                Quantity = 220,
+                UnitPrice = 2318.18m,
+                LineTotal = 510000
+            });
+
+            detail.LineItems.Add(new InvoiceLineItemDto
+            {
+                Id = $"ID_WT_{detail.Id}",
+                ItemType = "Water",
+                Description = "Nước sinh hoạt (22 m³)",
+                Quantity = 22,
+                UnitPrice = 12272.73m,
+                LineTotal = 270000
+            });
+
+            int vehIdx = 1;
+            foreach (var vehDesc in vehicleDescs)
+            {
+                var price = vehDesc.Contains("ô tô", StringComparison.OrdinalIgnoreCase) ? 1500000m : 120000m;
+                detail.LineItems.Add(new InvoiceLineItemDto
+                {
+                    Id = $"ID_PK_{detail.Id}_{vehIdx++}",
+                    ItemType = "ParkingFee",
+                    Description = vehDesc,
+                    Quantity = 1,
+                    UnitPrice = price,
+                    LineTotal = price
+                });
+            }
+        }
+
+        // 1.5. Late Payment Penalties (Phạt trễ hạn thanh toán nếu có)
+        const string lineItemPenaltySql = """
+            SELECT
+                Id,
+                OverdueDays,
+                PenaltyAmount,
+                Reason
+            FROM LatePaymentPenalties
+            WHERE InvoiceId = @InvoiceId;
+            """;
+
+        await using (var cmd = new MySqlCommand(lineItemPenaltySql, connection))
+        {
+            cmd.Parameters.AddWithValue("@InvoiceId", detail.Id);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var pAmount = reader.GetDecimal("PenaltyAmount");
+                var overdueDays = reader.GetInt32("OverdueDays");
+                var reason = GetNullableString(reader, "Reason") ?? $"Phạt trễ hạn {overdueDays} ngày";
+
+                detail.LineItems.Add(new InvoiceLineItemDto
+                {
+                    Id = reader.GetString("Id"),
+                    ItemType = "PenaltyFee",
+                    Description = $"Phí phạt trễ hạn ({reason})",
+                    Quantity = overdueDays,
+                    UnitPrice = overdueDays > 0 ? (pAmount / overdueDays) : pAmount,
+                    LineTotal = pAmount
+                });
+            }
+        }
+
         // 2. Utility Readings
         const string utilitySql = """
             SELECT
